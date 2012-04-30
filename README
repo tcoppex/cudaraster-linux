@@ -1,0 +1,41 @@
+================================================================================
+
+  CudaRasterizer - Linux Port -
+  
+================================================================================
+
+ ø 0 About ---------------------------------------------------------------------
+ 
+  Date: 25/04/12 
+  
+  Author: Thibault Coppex <thibault.coppex@gmail.com>  
+      
+  This application is a partial port of Samuli Laine's and Tero Karras' 
+  CudaRaster (cf. http://code.google.com/p/cudaraster/) from Microsoft Windows 
+  to Linux based system. 
+  
+  
+  --
+
+  I tried to minimize dependencies over CudaRaster's framework, but there is
+  still a lot of work to increase the readability.
+  
+  [TODO : add more details ]
+
+  
+ 
+ ø 1 Structure -----------------------------------------------------------------
+ 
+  src/ > Port of the nVidia's CUDA Rasterizer (rasterizer + part of the 
+         framework).
+ 
+  test/ > Simple demonstration of how to use the rasterizer [WiP].
+  
+  thirdparty/ > External libraries [not used currently].
+  
+  
+ ø 2 TODO ----------------------------------------------------------------------
+ 
+  Change the structure
+  
+================================================================================
