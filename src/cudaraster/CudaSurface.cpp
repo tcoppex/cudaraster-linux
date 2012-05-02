@@ -288,4 +288,5 @@ void CudaSurface::resolveToScreen(GLContext* gl)
 }
 */
 
+//------------------------------------------------------------------------
 } // namespace FW

@@ -14,10 +14,18 @@ INCLUDE_DIRECTORIES( src src/framework )
 
 INCLUDE( FindCUDA )
 
-SET( Libraries GLEW GL glut m)
+SET( Libraries GL glut m)
 LINK_LIBRARIES( "-L/usr/lib/nvidia-current -lcuda" )
+
+# Static libraries to build
+FILE( GLOB GLEW ${CMAKE_SOURCE_DIR}/thirdparty/GL/*.c extern/GL/*.h )
+FILE( GLOB GLSW ${CMAKE_SOURCE_DIR}/thirdparty/glsw/*.c extern/glsw/*.h )
+ADD_LIBRARY( glew ${GLEW} )
+ADD_LIBRARY( glsw ${GLSW} )
+INCLUDE_DIRECTORIES( thirdparty )
+
 
 CUDA_ADD_EXECUTABLE( ${CMAKE_PROJECT_NAME} ${Sources} ${Headers} )
 
-TARGET_LINK_LIBRARIES( ${CMAKE_PROJECT_NAME} ${Libraries} )
+TARGET_LINK_LIBRARIES( ${CMAKE_PROJECT_NAME} ${Libraries} glew glsw)
 

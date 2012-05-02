@@ -3,30 +3,43 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <GL/freeglut.h>
-
 #include "engine/Context.hpp"
-#include "shader/PassThrough.hpp"
 
 
-//==============================================================================
 
-App::~App()
-{
-  if (!m_bInitialized) {
-    return;
-  }
-  
-  delete m_colorBuffer;
-  m_colorBuffer = NULL;
-  
-  delete m_depthBuffer;
-  m_depthBuffer = NULL;
+// -----------------------------------------------
+// Static Definition
+// -----------------------------------------------
+
+const char* App::kShadersPath = "../test/shader/";
+
+App::RenderState App::kState;
+
+
+// -----------------------------------------------
+// Anonymous declaration
+// -----------------------------------------------
+
+namespace {
+
+// translate GLUT key as generic Camera key
+void moveCamera( Camera& camera, int key, bool isPressed);
+
 }
 
 
 // -----------------------------------------------
+// Constructor / Destructor
+// -----------------------------------------------
 
+App::~App()
+{
+}
+
+
+// -----------------------------------------------
+// Initializers
+// -----------------------------------------------
 
 void App::_initContext( int argc, char *argv[])
 {
@@ -38,10 +51,9 @@ void App::_initContext( int argc, char *argv[])
   
   
   const int flags = GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL;
-      
-  int h = m_Context->createWindow( App::kScreenWidth, App::kScreenHeight, 
-                                   flags, 
-                                   "CudaRaster test");
+  const char *name = "CudaRaster test";
+  
+  int h = m_Context->createWindow( App::kScreenWidth, App::kScreenHeight, flags, name);
   
   if (h < 1)
   {
@@ -51,238 +63,129 @@ void App::_initContext( int argc, char *argv[])
 }
 
 void App::_initObject( int argc, char *argv[])
-{ 
-  // TODO: use more specific directories 
+{     
+  /// Create the OpenGL-CudaRaster mesh data
+  //meshUtils::setup_cubeMesh( m_mesh );  
   
-  m_cudaCompiler.setSourceFile( "../test/shader/PassThrough.cu" );
-
-  // Uses same include directories as the CMake script (for consistency)
-  m_cudaCompiler.include( "../src/framework" );
-  m_cudaCompiler.include( "../src/" );
+  //m_sceneCR.setDatas( m_mesh );
+  //m_sceneGL.setDatas( m_mesh );
   
-  m_cudaRaster.init();
- 
-  //firstTimeInit(); 
-  initPipe();
+  m_sceneCR.init();
+  m_sceneGL.init();
+  
+  /// Set default camera parameters
+  m_camera.setViewParams( glm::vec3( 0.0f, 2.0f, 4.0f),       // Eye position
+                          glm::vec3( 0.0f, 0.0f, 0.0f) );     // Eye target
 }
 
 
+
+// -----------------------------------------------
+// Event Handlers
 // -----------------------------------------------
 
-
-void App::idle()
+void App::reshape(int w, int h)
 {
-  glutPostRedisplay();
+  // crappy
+  if ((w != kScreenWidth) || (h != kScreenHeight)) {
+    glutReshapeWindow( kScreenWidth, kScreenHeight);
+    return;
+  }
+  
+  glViewport( 0, 0, w, h);
+  
+  const float fov = 60.0f;
+  float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+  const float zNear = 0.1f;
+  const float zFar = 100.0f;
+  
+  m_camera.setProjectionParams( fov, aspectRatio, zNear, zFar);
 }
 
 void App::display()
 {
-#if 0
-  render_cudaraster();
-#else
   if (MODE_CUDARASTER==m_mode) {
-    render_cudaraster();
+    m_sceneCR.render( m_camera );
   } else {
-    render_opengl();
+    m_sceneGL.render( m_camera );
   }
-#endif
+
   m_Context->flush();
 }
 
-
-// -----------------------------------------------
-
-
-void App::initPipe(void)
-{  
-  // Create surfaces.
-  FW::Vec2i screenResolution = FW::Vec2i( App::kScreenWidth, App::kScreenHeight);  
-  
-  m_colorBuffer = new FW::CudaSurface( screenResolution, 
-                                       FW::CudaSurface::FORMAT_RGBA8, 
-                                       m_numSamples);
-
-  m_depthBuffer = new FW::CudaSurface( screenResolution, 
-                                       FW::CudaSurface::FORMAT_DEPTH32, 
-                                       m_numSamples);
-
-  // Compile CUDA code.
-  FW::U32 renderModeFlags = 0;
-  if (m_enableDepth) renderModeFlags |= FW::RenderModeFlag_EnableDepth;
-  if (m_enableLerp)  renderModeFlags |= FW::RenderModeFlag_EnableLerp;
-  if (m_enableQuads) renderModeFlags |= FW::RenderModeFlag_EnableQuads;
-
-  m_cudaCompiler.clearDefines();
-  m_cudaCompiler.define("SAMPLES_LOG2", m_colorBuffer->getSamplesLog2());
-  m_cudaCompiler.define("RENDER_MODE_FLAGS", renderModeFlags);
-  m_cudaCompiler.define("BLEND_SHADER", (!m_enableBlend) ? "BlendReplace" : 
-                                                           "BlendSrcOver" );
-
-  m_cudaModule = m_cudaCompiler.compile();
-    
-  if (NULL == m_cudaModule) {
-    exit( EXIT_FAILURE );
+void App::keyboard( unsigned char key, int x, int y)
+{
+  switch (key)
+  {
+    case 27: // ESCAPE KEY
+      exit( EXIT_SUCCESS );
+    break;
+      
+    default:
+      break;
   }
-  
-  std::string pipePostfix = "passthrough";
-  
-  std::string kernelName("vertexShader_" + pipePostfix);
-  size_t paramSize = 1 * sizeof(FW::U32) + 2 * sizeof(CUdeviceptr);
-  m_vertexShaderKernel = m_cudaModule->getKernel( kernelName, paramSize);
-
-  // Setup CudaRaster.
-  std::string pipeName("PixelPipe_" + pipePostfix);
-  m_cudaRaster.setSurfaces( m_colorBuffer, m_depthBuffer);
-  m_cudaRaster.setPixelPipe( m_cudaModule, pipeName);
 }
 
-void App::firstTimeInit(void)
+void App::special( int key, int x, int y)
 {
-#if 0
-  printf("Performing first-time initialization.\n");
-  printf("This will take a while.\n");
-  printf("\n");
+  moveCamera( m_camera, key, true);
+}
 
-  // Populate CudaCompiler cache.
-  //  int numMSAA = 4, numModes = 8, numBlends = 2; // all variants
-  int numMSAA = 1, numModes = 2, numBlends = 2; // first 3 toggles
+void App::specialUp( int key, int x, int y)
+{
+  moveCamera( m_camera, key, false);
+}
 
-  int progress = 0;
-  for (int msaa = 0; msaa < numMSAA; msaa++)
-  for (int mode = 0; mode < numModes; mode++)
-  for (int blend = 0; blend < numBlends; blend++)
-  {
-    printf( "Populating CudaCompiler cache... %d/%d\n", 
-            ++progress, numMSAA * numModes * numBlends);
-
-    m_cudaCompiler.clearDefines();
-    
-    m_cudaCompiler.define("SAMPLES_LOG2", msaa);
-    
-    m_cudaCompiler.define("RENDER_MODE_FLAGS", 
-                          mode ^ 
-                          FW::RenderModeFlag_EnableDepth ^ 
-                          FW::RenderModeFlag_EnableLerp);
-
-    m_cudaCompiler.define("BLEND_SHADER", (blend == 0) ? "BlendReplace" : 
-                                                         "BlendSrcOver" );
-    m_cudaCompiler.compile(false);
-    //failIfError();
+void App::mouse(int button, int state, int x, int y)
+{
+  if (GLUT_DOWN == state) {
+    m_camera.motionHandler( x, y, true);
   }
-  printf("\rPopulating CudaCompiler cache... Done.\n");
+}
 
-  // Setup default state.
-  /*
-  printf("Loading mesh...\n");
-  loadMesh("scenes/fairyforest/fairyforest.obj");    
-  */
-#endif
+void App::motion(int x, int y)
+{
+  m_camera.motionHandler( x, y, false);
+}
+
+void App::idle()
+{
+  m_camera.update();
+  glutPostRedisplay();
 }
 
 
 // -----------------------------------------------
+// Anonymous definition
+// -----------------------------------------------
 
+namespace {
 
-void App::render_cudaraster()
+void moveCamera( Camera& camera, int key, bool isPressed)
 {
-  /*
-  Mat4f posToCamera = m_cameraCtrl.getWorldToCamera();
-  Mat4f projection = gl->xformFitToView(-1.0f, 2.0f) * m_cameraCtrl.getCameraToClip();
-  */
-  
-  /*
-  // Parameters changed => reinitialize pipe.  
-  if (m_colorBuffer && m_colorBuffer->getSize() != m_window.getSize()) {
-    m_pipeDirty = true;
-  }
-  */
-  if (m_colorBuffer && m_colorBuffer->getNumSamples() != m_numSamples) {
-    m_pipeDirty = true;
-  }
-  if (m_pipeDirty) {
-    initPipe();
-  }
-  m_pipeDirty = false;
-  /**/
-  
-  //----------------------------------
-
-    
-  /// ========== 1) Custom VertexShader to transform the vertices ==========
-    
-  // Set globals. (here, it can be seen as GLSL's uniforms)
-  FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal("c_constants").getMutablePtrDiscard();
-  
-  c.posToClip;
-  // TODO
-  //c.posToClip = projection * posToCamera;
-  
-  int ofs = 0;
-  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, m_inputVertices.getCudaPtr());
-  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, m_shadedVertices.getMutableCudaPtrDiscard());
-  ofs += m_cudaModule->setParami( m_vertexShaderKernel, ofs, m_numVertices);
-  
-  FW::Vec2i blockSize(32, 4);
-  int numBlocks = (m_numVertices - 1) / (blockSize.x * blockSize.y) + 1;
-  m_cudaModule->launchKernel(m_vertexShaderKernel, blockSize, numBlocks);
-
-  /// ========== 2) Run CudaRaster ==========
-
-  m_cudaRaster.deferredClear( FW::Vec4f(0.2f, 0.4f, 0.8f, 1.0f) );
-  
-  m_cudaRaster.setVertexBuffer(&m_shadedVertices, 0);
-  m_cudaRaster.setIndexBuffer(&m_vertexIndices, 0, m_numTriangles);
-  fprintf( stderr, "%d\n", __LINE__);
-  m_cudaRaster.drawTriangles();
-  fprintf( stderr, "%d\n", __LINE__);
-
-  /// ========== 3) Render the buffer as an OpenGL screenquad ==========
-
-  // Render the texture as a Quad mapping the screen's corners
-  //m_colorBuffer->resolveToScreen();
-  
-  /*  
-  // Show CudaRaster statistics.
-  if (m_showStats)
+  switch (key)
   {
-    CudaRaster::Stats s = m_cudaRaster.getStats();
-    m_commonCtrl.message(
-        sprintf( "CudaRaster: setup = %.2fms, bin = %.2fms, "\
-                 "coarse = %.2fms, fine = %.2fms, total = %.2fms",
-        s.setupTime * 1.0e3f,
-        s.binTime * 1.0e3f,
-        s.coarseTime * 1.0e3f,
-        s.fineTime * 1.0e3f,
-        (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
-    ), "cudaRasterStats");
+    case GLUT_KEY_UP:
+      camera.keyboardHandler( MOVE_FORWARD, isPressed);
+    break;
+    
+    case GLUT_KEY_DOWN:
+      camera.keyboardHandler( MOVE_BACKWARD, isPressed);
+    break;
+    
+    case GLUT_KEY_LEFT:
+      camera.keyboardHandler( MOVE_LEFT, isPressed);
+    break;
+    
+    case GLUT_KEY_RIGHT:
+      camera.keyboardHandler( MOVE_RIGHT, isPressed);
+    break;
+    
+    default:
+    break;
   }
-  */
 }
 
+} // namespace
 
-void App::render_opengl()
-{
-  /*
-  Mat4f posToCamera = m_cameraCtrl.getWorldToCamera();
-  Mat4f projection = gl->xformFitToView(-1.0f, 2.0f) * m_cameraCtrl.getCameraToClip();
-  */  
-  
-  glClearColor( 0.2f, 0.4f, 0.8f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
-  glEnable(GL_CULL_FACE);
-  
-  glDisable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  
-  glDisable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  if (m_enableDepth)  glEnable(GL_DEPTH_TEST);
-  if (m_enableBlend)  glEnable(GL_BLEND);
-
-  //m_mesh->draw(gl, posToCamera, projection, NULL, (!m_enableTexPhong));  
-  
-}
-
-//==============================================================================

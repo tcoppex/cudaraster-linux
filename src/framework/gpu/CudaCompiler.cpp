@@ -166,7 +166,7 @@ std::string CudaCompiler::compileCubinFile(bool enablePrints)
   if (fileExists(cubinFile)) 
   {
 #ifndef NDEBUG
-    fprintf( stderr, "CudaCompiler: '%s' already compiled.\n", m_sourceFile.c_str());
+    //fprintf( stderr, "CudaCompiler: '%s' already compiled.\n", m_sourceFile.c_str());
 #endif
     return cubinFile;
   }

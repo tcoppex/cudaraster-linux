@@ -13,7 +13,7 @@ namespace FW {
 
 struct Constants
 {
-  Mat4f posToClip;
+  Mat4f posToClip;  // ModelViewProj matrix
 };
 
 

@@ -26,8 +26,7 @@ class Application : public Listener
     
     virtual ~Application() {}
     
-    
-    /// Call sub-initializers ordered
+    // ++ Main initializer ++
     virtual void init( int argc, char *argv[]);
     
     // ++ MainLoop ++

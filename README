@@ -38,4 +38,6 @@
  
   Change the structure
   
+  make it recompile the kernel shader when it changes
+  
 ================================================================================

@@ -2,7 +2,10 @@
 #ifndef ENGINE_LISTENER_HPP_
 #define ENGINE_LISTENER_HPP_
 
-// Encapsulate event functions used by the GLUT Windows Manager
+/// ================================================
+/// Encapsulate event functions used by the GLUT 
+/// Windows Manager.
+/// ================================================
 class Listener
 {
   public:
