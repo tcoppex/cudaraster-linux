@@ -50,6 +50,7 @@ bool Program::addShader(const ShaderType shaderType, const char* name)
   glAttachShader( id(), shader);
   glDeleteShader(shader); //flagged for deletion
   
+  
   return true;
 }
 

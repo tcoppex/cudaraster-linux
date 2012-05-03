@@ -3,6 +3,7 @@
 
 #include <glsw/glsw.h>
 #include "App.hpp"
+#include "Data.hpp"
 #include "engine/Camera.hpp"
 
 
@@ -38,12 +39,12 @@ void SceneGL::render(const Camera& camera)
 
   if (App::kState.bDepth)  glEnable(GL_DEPTH_TEST);
   if (App::kState.bBlend)  glEnable(GL_BLEND);
-
+  
   
   m_program.bind();
     const glm::mat4 &mvpMatrix = camera.getViewProjMatrix();
     m_program.setUniform( "uModelViewProjMatrix", mvpMatrix);
-    //m_rMesh.draw();
+    m_mesh.draw();
   m_program.unbind();
 }
 
@@ -52,9 +53,37 @@ void SceneGL::render(const Camera& camera)
 // Initializers
 // -----------------------------------------------
 
-void SceneGL::init()
+void SceneGL::init(const Data& data)
 {
+  initGeometry(data);
   initShaders();
+}
+
+void SceneGL::initGeometry(const Data& data)
+{
+  assert( !data.positions.empty() );
+ 
+  // Vertices
+  std::vector<glm::vec3> &positions = m_mesh.getPositions();  
+  positions.resize( data.numVertices );
+  
+  for (size_t i=0u; i<positions.size(); ++i)
+  {
+    positions[i] = glm::vec3( data.positions[3u*i+0u],
+                              data.positions[3u*i+1u],
+                              data.positions[3u*i+2u] );
+  }
+  
+  // Indices
+  if (!data.indices.empty()) {
+    std::vector<GLuint> &indices = m_mesh.getIndices();
+    indices.assign( data.indices.begin(), data.indices.end());
+  }
+  
+  
+  m_mesh.generate();
+  m_mesh.complete( GL_STATIC_DRAW );
+  
 }
 
 void SceneGL::initShaders()

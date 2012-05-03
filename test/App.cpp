@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include "Data.hpp"
 #include "engine/Context.hpp"
 
 
@@ -24,6 +25,8 @@ namespace {
 
 // translate GLUT key as generic Camera key
 void moveCamera( Camera& camera, int key, bool isPressed);
+
+void setup_cubeMesh(Data& data);
 
 }
 
@@ -63,15 +66,13 @@ void App::_initContext( int argc, char *argv[])
 }
 
 void App::_initObject( int argc, char *argv[])
-{     
+{ 
   /// Create the OpenGL-CudaRaster mesh data
-  //meshUtils::setup_cubeMesh( m_mesh );  
-  
-  //m_sceneCR.setDatas( m_mesh );
-  //m_sceneGL.setDatas( m_mesh );
-  
-  m_sceneCR.init();
-  m_sceneGL.init();
+  Data meshData;
+  setup_cubeMesh(meshData);  
+    
+  //m_sceneCR.init(meshData);
+  m_sceneGL.init(meshData);
   
   /// Set default camera parameters
   m_camera.setViewParams( glm::vec3( 0.0f, 2.0f, 4.0f),       // Eye position
@@ -104,11 +105,16 @@ void App::reshape(int w, int h)
 
 void App::display()
 {
+  /*
   if (MODE_CUDARASTER==m_mode) {
     m_sceneCR.render( m_camera );
   } else {
     m_sceneGL.render( m_camera );
   }
+  */
+
+  m_sceneGL.render( m_camera );
+  assert( glGetError() == GL_NO_ERROR );
 
   m_Context->flush();
 }
@@ -186,6 +192,39 @@ void moveCamera( Camera& camera, int key, bool isPressed)
   }
 }
 
+void setup_cubeMesh(Data& data)
+{
+  
+  float vertices[] = 
+  {
+    -1.0f, -1.0f, -1.0f, //0
+    -1.0f, -1.0f, +1.0f, //1
+    -1.0f, +1.0f, -1.0f, //2
+    -1.0f, +1.0f, +1.0f, //3
+    +1.0f, -1.0f, -1.0f, //4
+    +1.0f, -1.0f, +1.0f, //5
+    +1.0f, +1.0f, -1.0f, //6
+    +1.0f, +1.0f, +1.0f  //7
+  };
+  
+  unsigned int triIndices[] = 
+  {
+    7, 3, 1,      7, 1, 5,
+    7, 5, 6,      6, 5, 4,
+    6, 4, 2,      2, 4, 0,
+    2, 0, 3,      3, 0, 1,
+    3, 7, 6,      3, 6, 2,
+    5, 1, 0,      5, 0, 4
+  };
+  
+  size_t vertices_size = (sizeof(vertices) / sizeof(vertices[0]));
+  size_t triIndices_size = (sizeof(triIndices) / sizeof(triIndices[0]));
+  
+  data.positions.assign( vertices, vertices + vertices_size);
+  data.indices.assign( triIndices, triIndices + triIndices_size);
+  data.numVertices = vertices_size / 3;
+  data.numIndices = triIndices_size;
+  
+}
+
 } // namespace
-
-

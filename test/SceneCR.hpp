@@ -20,22 +20,20 @@ class SceneCR
     FW::CudaCompiler m_cudaCompiler;
     FW::CudaRaster m_cudaRaster;
     
-    // ++ CudaRaster compatible buffer ++
-    FW::Buffer m_inVertices;
-    FW::Buffer m_outVertices;
-    FW::Buffer m_indices;
-    
-    int m_numVertices;
-    int m_numTriangles;
-    
-    
     // ++ Pipe ++
     bool m_pipeDirty;
     FW::CudaSurface* m_colorBuffer;
     FW::CudaSurface* m_depthBuffer;
     FW::CudaModule* m_cudaModule;
     CUfunction m_vertexShaderKernel;
-    
+        
+    // ++ Mesh data ++
+    FW::Buffer m_inVertices;          // Vertex Shader input vertices
+    FW::Buffer m_outVertices;         // Vertex Shader output vertices (transformed)
+    FW::Buffer m_indices;
+    int m_numVertices;
+    int m_numTriangles;
+        
     
   public:
     SceneCR()

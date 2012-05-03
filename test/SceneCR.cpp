@@ -7,6 +7,18 @@
 
 
 // -----------------------------------------------
+// Anonymous declaration
+// -----------------------------------------------
+
+namespace {
+
+// translate GLUT key as generic Camera key
+void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out);
+
+}
+
+
+// -----------------------------------------------
 // Constructor / Destructor
 // -----------------------------------------------
 
@@ -23,17 +35,6 @@ SceneCR::~SceneCR()
     delete m_depthBuffer;
     m_depthBuffer = NULL;
   }
-}
-
-// -----------------------------------------------
-// Anonymous declaration
-// -----------------------------------------------
-
-namespace {
-
-// translate GLUT key as generic Camera key
-void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out);
-
 }
 
 
@@ -153,23 +154,19 @@ void SceneCR::firstTimeInit(void)
 // -----------------------------------------------
 
 void SceneCR::render( const Camera& camera )
-{  
+{
+  FW::Vec2i windowSize( App::kScreenWidth, App::kScreenWidth);
   
-  /*
   // Parameters changed => reinitialize pipe.  
-  if (m_colorBuffer && m_colorBuffer->getSize() != m_window.getSize()) {
+  if (m_colorBuffer && m_colorBuffer->getSize() != windowSize) {
     m_pipeDirty = true;
-  }
-  */
-  
+  }  
   if (m_colorBuffer && m_colorBuffer->getNumSamples() != App::kState.numSamples) {
     m_pipeDirty = true;
-  }
-  
+  }  
   if (m_pipeDirty) {
     initPipe();
-  }
-  
+  }  
   m_pipeDirty = false;
   
   
@@ -213,22 +210,20 @@ void SceneCR::render( const Camera& camera )
   // Render the texture as a Quad mapping the screen's corners
   //m_colorBuffer->resolveToScreen();
   
-#if 0
+  
   // Show CudaRaster statistics.
-  if (m_showStats)
+  if (false) //m_showStats
   {
-    CudaRaster::Stats s = m_cudaRaster.getStats();
-    m_commonCtrl.message(
-        sprintf( "CudaRaster: setup = %.2fms, bin = %.2fms, "\
-                 "coarse = %.2fms, fine = %.2fms, total = %.2fms",
-        s.setupTime * 1.0e3f,
-        s.binTime * 1.0e3f,
-        s.coarseTime * 1.0e3f,
-        s.fineTime * 1.0e3f,
-        (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
-    ), "cudaRasterStats");
+    FW::CudaRaster::Stats s = m_cudaRaster.getStats();
+    fprintf( stderr,  "CudaRaster: setup = %.2fms, bin = %.2fms, "\
+                      "coarse = %.2fms, fine = %.2fms, total = %.2fms",
+                      s.setupTime   * 1.0e3f,
+                      s.binTime     * 1.0e3f,
+                      s.coarseTime  * 1.0e3f,
+                      s.fineTime    * 1.0e3f,
+                      (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
+    );
   }
-#endif
 
 }
 

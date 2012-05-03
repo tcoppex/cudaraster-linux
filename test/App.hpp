@@ -4,7 +4,6 @@
 // Application layout
 #include "engine/Application.hpp"
 
-//#include "Mesh.hpp"
 #include "SceneCR.hpp"
 #include "SceneGL.hpp"
 #include "engine/Camera.hpp"
@@ -58,8 +57,7 @@ class App : public Application
     
   private:
     Mode m_mode;
-           
-    //Mesh m_mesh;    
+    
     SceneCR m_sceneCR;
     SceneGL m_sceneGL;
     
