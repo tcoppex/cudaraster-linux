@@ -25,11 +25,12 @@
 #include "CudaSurface.hpp"
 
 #include <cassert>
-#include <cudaGL.h>         // CUDA driver API OpenGL interoperability
+#include <cudaGL.h>             // CUDA driver API OpenGL interoperability
 #include "base/Defs.hpp"
 #include "gpu/CudaModule.hpp"
 
 #include "cuda/Constants.hpp"
+
 
 namespace FW {
 
@@ -123,7 +124,7 @@ GLuint CudaSurface::getGLTexture(void)
 {
   if (m_isMapped)
   {
-    CUresult res = cuGraphicsUnmapResources(1, &m_cudaResource, NULL);
+    CUresult res = cuGraphicsUnmapResources(1u, &m_cudaResource, NULL);
     CudaModule::checkError("cuGraphicsUnmapResources", res);
     m_isMapped = false;
   }
@@ -136,7 +137,7 @@ CUarray CudaSurface::getCudaArray(void)
 {
   if (!m_isMapped)
   {
-    CUresult res = cuGraphicsMapResources(1, &m_cudaResource, NULL);
+    CUresult res = cuGraphicsMapResources(1u, &m_cudaResource, NULL);
     CudaModule::checkError("cuGraphicsMapResources", res);
     
     res = cuGraphicsSubResourceGetMappedArray(&m_cudaArray, m_cudaResource, 0, 0);

@@ -151,36 +151,56 @@ CUtexref CudaModule::getTexRef(const std::string& name)
 {
   CUtexref *pTexref = m_texRefHash[name];
 
+  printf("%s(%s)\n", __FUNCTION__, name.c_str());
+  //
   if (pTexref) {
+    printf("%s: ref NOT NULL\n", __FUNCTION__);
     return *pTexref;
+  } else {
+    printf("%s: ref NUUUUUL\n", __FUNCTION__);
   }
 
+//
   CUtexref texRef;
   checkError("cuModuleGetTexRef", cuModuleGetTexRef(&texRef, m_module, name.c_str()));
   
   m_texRefs.push_back(texRef);
   m_texRefHash[name] = &m_texRefs[m_texRefs.size()-1u];
-  
+//
+
   return texRef;
 }
 
-void CudaModule::setTexRef(const std::string& name, Buffer& buf, 
-                           CUarray_format format, int numComponents)
+void CudaModule::setTexRef( const std::string& name, 
+                            Buffer& buf, 
+                            CUarray_format format, 
+                            int numComponents)
 {
   setTexRef( name, buf.getCudaPtr(), buf.getSize(), format, numComponents);
 }
 
 
-void CudaModule::setTexRef(const std::string& name, CUdeviceptr ptr, S64 size, 
-                           CUarray_format format, int numComponents)
+void CudaModule::setTexRef( const std::string& name, 
+                            CUdeviceptr ptr, 
+                            S64 size, 
+                            CUarray_format format, 
+                            int numComponents)
 {
+  fprintf( stderr, "%s BEGIN\n", __FUNCTION__);
+  fprintf( stderr, "%s\n", name.c_str());
   CUtexref texRef = getTexRef(name);
+  fprintf( stderr, "%p\n", texRef);
   checkError("cuTexRefSetFormat", cuTexRefSetFormat(texRef, format, numComponents));
   checkError("cuTexRefSetAddress", cuTexRefSetAddress(NULL, texRef, ptr, (U32)size));
+  fprintf( stderr, "%s END\n", __FUNCTION__);
 }
 
-void CudaModule::setTexRef(const std::string& name, CUarray cudaArray, bool wrap, 
-                           bool bilinear, bool normalizedCoords, bool readAsInt)
+void CudaModule::setTexRef( const std::string& name, 
+                            CUarray cudaArray, 
+                            bool wrap, 
+                            bool bilinear, 
+                            bool normalizedCoords, 
+                            bool readAsInt)
 {
   U32 flags = 0;
   if (normalizedCoords) {
@@ -345,12 +365,8 @@ void CudaModule::staticInit(void)
   }
 #endif
 
-  //fprintf( stderr, "%s : using cuCtxCreate and not cuGLCtxCreate\n", __FUNCTION__);
-
-  //GLContext::staticInit();
+  // OpenGL & window context must have been initialized !
   checkError("cuGLCtxCreate", cuGLCtxCreate( &s_context, flags, s_device));
-  //else
-  //checkError("cuCtxCreate", cuCtxCreate(&s_context, flags, s_device));
 
   checkError("cuEventCreate", cuEventCreate(&s_startEvent, 0));
   checkError("cuEventCreate", cuEventCreate(&s_endEvent, 0));
@@ -537,12 +553,12 @@ CUdevice CudaModule::selectDevice(void)
 
     int clockRate;
     res = cuDeviceGetAttribute(&clockRate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, dev);
-    checkError( "cuDeviceGetAttribute", res);
+    checkError("cuDeviceGetAttribute", res);
 
     int numProcessors;
     res = cuDeviceGetAttribute(&numProcessors, 
                                CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, dev);
-    checkError( "cuDeviceGetAttribute", res);
+    checkError("cuDeviceGetAttribute", res);
     
     S32 score = clockRate * numProcessors;
     if (score > bestScore)
@@ -666,8 +682,7 @@ Vec2i CudaModule::selectGridSize(int numBlocks)
   CUresult res = CUDA_SUCCESS;
   int maxWidth;
 
-  res = cuDeviceGetAttribute(&maxWidth, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, 
-                             s_device);
+  res = cuDeviceGetAttribute(&maxWidth, CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X, s_device);
   checkError("cuDeviceGetAttribute", res);
 
   Vec2i size(numBlocks, 1);

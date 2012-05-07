@@ -24,6 +24,7 @@
 #include "CudaRaster.hpp"
 #include <cstring>
 
+
 namespace FW {
 
 //------------------------------------------------------------------------
@@ -257,6 +258,7 @@ void CudaRaster::drawTriangles(void)
 
   if (m_pipeSpec.samplesLog2 != m_colorBuffer->getSamplesLog2())
     fail("CudaRaster: Mismatch in multisampling between pixel pipe and surface!");
+    
 
   // Select batch size for BinRaster and estimate buffer sizes.
   {
@@ -266,19 +268,20 @@ void CudaRaster::drawTriangles(void)
 
     m_binBatchSize = clamp(m_numTris / (roundSize * minBatches), 1, maxRounds) * roundSize;
     m_maxSubtris = max(m_maxSubtris, m_numTris + maxSubtrisSlack);
-    m_maxBinSegs = max(m_maxBinSegs, max(m_numBins * CR_BIN_STREAMS_SIZE, (m_numTris - 1) / CR_BIN_SEG_SIZE + 1) + maxBinSegsSlack);
+    m_maxBinSegs = max(m_maxBinSegs, max(m_numBins * CR_BIN_STREAMS_SIZE, 
+                                         (m_numTris - 1) / CR_BIN_SEG_SIZE + 1) + 
+                       maxBinSegsSlack);
     m_maxTileSegs = max(m_maxTileSegs, max(m_numTiles, (m_numTris - 1) / CR_TILE_SEG_SIZE + 1) + maxTileSegsSlack);
   }
 
   // Retry until successful.
-
   for (;;)
   {
     // Allocate buffers.
-
-    if (m_maxSubtris > CR_MAXSUBTRIS_SIZE)
-        fail("CudaRaster: CR_MAXSUBTRIS_SIZE exceeded!");
-
+    if (m_maxSubtris > CR_MAXSUBTRIS_SIZE) {
+      fail("CudaRaster: CR_MAXSUBTRIS_SIZE exceeded!");
+    }
+    
     m_triSubtris.resizeDiscard(m_maxSubtris * sizeof(U8));
     m_triHeader.resizeDiscard(m_maxSubtris * sizeof(CRTriangleHeader));
     m_triData.resizeDiscard(m_maxSubtris * sizeof(CRTriangleData));
@@ -291,40 +294,48 @@ void CudaRaster::drawTriangles(void)
     m_tileSegNext.resizeDiscard(m_maxTileSegs * sizeof(S32));
     m_tileSegCount.resizeDiscard(m_maxTileSegs * sizeof(S32));
 
+    fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+
     // No profiling => launch stages.
-
     if (m_pipeSpec.profilingMode == ProfilingMode_Default)
-        launchStages();
-
+    {
+      launchStages();
+      fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+    }
     // Otherwise => setup data buffer, and launch multiple times.
-
     else
     {
-        int numCounters     = FW_ARRAY_SIZE(g_profCounters);
-        int numTimers       = FW_ARRAY_SIZE(g_profTimers);
-        int totalWarps      = m_numSMs * max(CR_BIN_WARPS, CR_COARSE_WARPS, m_numFineWarps);
-        int bytesPerWarp    = max(numCounters * 64 * (int)sizeof(S64), numTimers * 32 * (int)sizeof(U32));
+      int numCounters  = FW_ARRAY_SIZE(g_profCounters);
+      int numTimers    = FW_ARRAY_SIZE(g_profTimers);
+      int totalWarps   = m_numSMs * max(CR_BIN_WARPS, CR_COARSE_WARPS, m_numFineWarps);
+      int bytesPerWarp = max( numCounters * 64 * (int)sizeof(S64), 
+                              numTimers * 32 * (int)sizeof(U32));
 
-        m_profData.resizeDiscard(totalWarps * bytesPerWarp);
-        m_profData.clear(0);
-        *(CUdeviceptr*)m_module->getGlobal("c_profData").getMutablePtrDiscard() = m_profData.getMutableCudaPtr();
+      m_profData.resizeDiscard(totalWarps * bytesPerWarp);
+      m_profData.clear(0);
+      *(CUdeviceptr*)m_module->getGlobal("c_profData").getMutablePtrDiscard() = 
+                                                m_profData.getMutableCudaPtr();
 
-        int numLaunches = (m_pipeSpec.profilingMode == ProfilingMode_Timers) ? numTimers : 1;
-        for (int i = 0; i < numLaunches; i++)
-        {
-            *(S32*)m_module->getGlobal("c_profLaunchIdx").getMutablePtrDiscard() = i;
-            launchStages();
-        }
+      int numLaunches = (m_pipeSpec.profilingMode == ProfilingMode_Timers) ? numTimers : 1;
+      
+      for (int i = 0; i < numLaunches; i++)
+      {
+        *(S32*)m_module->getGlobal("c_profLaunchIdx").getMutablePtrDiscard() = i;
+        launchStages();
+      }
     }
 
     // No overflows => done.
-
     const CRAtomics& atomics = *(const CRAtomics*)m_module->getGlobal("g_crAtomics").getPtr();
-    if (atomics.numSubtris <= m_maxSubtris && atomics.numBinSegs <= m_maxBinSegs && atomics.numTileSegs <= m_maxTileSegs)
-        break;
-
+    
+    if (atomics.numSubtris <= m_maxSubtris && 
+        atomics.numBinSegs <= m_maxBinSegs && 
+        atomics.numTileSegs <= m_maxTileSegs)
+    {
+      break;
+    }
+    
     // Grow buffers and retry.
-
     m_maxSubtris = max(m_maxSubtris, atomics.numSubtris + maxSubtrisSlack);
     m_maxBinSegs = max(m_maxBinSegs, atomics.numBinSegs + maxBinSegsSlack);
     m_maxTileSegs = max(m_maxTileSegs, atomics.numTileSegs + maxTileSegsSlack);
@@ -338,6 +349,7 @@ void CudaRaster::drawTriangles(void)
 CudaRaster::Stats CudaRaster::getStats(void)
 {
     Stats stats;
+    
     memset(&stats, 0, sizeof(Stats));
     CudaModule::sync(false);
 
@@ -346,10 +358,10 @@ CudaRaster::Stats CudaRaster::getStats(void)
     cuEventElapsedTime(&stats.coarseTime,   m_evCoarseBegin,    m_evFineBegin);
     cuEventElapsedTime(&stats.fineTime,     m_evFineBegin,      m_evFineEnd);
 
-    stats.setupTime     *= 1.0e-3f;
-    stats.binTime       *= 1.0e-3f;
-    stats.coarseTime    *= 1.0e-3f;
-    stats.fineTime      *= 1.0e-3f;
+    stats.setupTime  *= 1.0e-3f;
+    stats.binTime    *= 1.0e-3f;
+    stats.coarseTime *= 1.0e-3f;
+    stats.fineTime   *= 1.0e-3f;
     return stats;
 }
 
@@ -470,183 +482,187 @@ void CudaRaster::setDebugParams(const DebugParams& p)
 
 void CudaRaster::launchStages(void)
 {
-    // Set parameters.
-    {
-        CRParams& p = *(CRParams*)m_module->getGlobal("c_crParams").getMutablePtrDiscard();
+  assert( m_vertexBuffer->getSize() != 0 );
 
-        p.numTris           = m_numTris;
-        p.vertexBuffer      = m_vertexBuffer->getCudaPtr(m_vertexOfs);
-        p.indexBuffer       = m_indexBuffer->getCudaPtr(m_indexOfs);
+  // Set parameters.
+  {
+    CRParams& p = *(CRParams*)m_module->getGlobal("c_crParams").getMutablePtrDiscard();
 
-        p.viewportWidth     = m_viewportSize.x;
-        p.viewportHeight    = m_viewportSize.y;
-        p.widthPixels       = m_sizePixels.x;
-        p.heightPixels      = m_sizePixels.y;
+    p.numTris           = m_numTris;
+    p.vertexBuffer      = m_vertexBuffer->getCudaPtr(m_vertexOfs);
+    p.indexBuffer       = m_indexBuffer->getCudaPtr(m_indexOfs);
 
-        p.widthBins         = m_sizeBins.x;
-        p.heightBins        = m_sizeBins.y;
-        p.numBins           = m_numBins;
+    p.viewportWidth     = m_viewportSize.x;
+    p.viewportHeight    = m_viewportSize.y;
+    p.widthPixels       = m_sizePixels.x;
+    p.heightPixels      = m_sizePixels.y;
 
-        p.widthTiles        = m_sizeTiles.x;
-        p.heightTiles       = m_sizeTiles.y;
-        p.numTiles          = m_numTiles;
+    p.widthBins         = m_sizeBins.x;
+    p.heightBins        = m_sizeBins.y;
+    p.numBins           = m_numBins;
 
-        p.binBatchSize      = m_binBatchSize;
+    p.widthTiles        = m_sizeTiles.x;
+    p.heightTiles       = m_sizeTiles.y;
+    p.numTiles          = m_numTiles;
 
-        p.deferredClear     = (m_deferredClear) ? 1 : 0;
-        p.clearColor        = m_clearColor;
-        p.clearDepth        = m_clearDepth;
+    p.binBatchSize      = m_binBatchSize;
 
-        p.maxSubtris        = m_maxSubtris;
-        p.triSubtris        = m_triSubtris.getMutableCudaPtrDiscard();
-        p.triHeader         = m_triHeader.getMutableCudaPtrDiscard();
-        p.triData           = m_triData.getMutableCudaPtrDiscard();
+    p.deferredClear     = (m_deferredClear) ? 1 : 0;
+    p.clearColor        = m_clearColor;
+    p.clearDepth        = m_clearDepth;
 
-        p.maxBinSegs        = m_maxBinSegs;
-        p.binFirstSeg       = m_binFirstSeg.getMutableCudaPtrDiscard();
-        p.binTotal          = m_binTotal.getMutableCudaPtrDiscard();
-        p.binSegData        = m_binSegData.getMutableCudaPtrDiscard();
-        p.binSegNext        = m_binSegNext.getMutableCudaPtrDiscard();
-        p.binSegCount		= m_binSegCount.getMutableCudaPtrDiscard();
+    p.maxSubtris        = m_maxSubtris;
+    p.triSubtris        = m_triSubtris.getMutableCudaPtrDiscard();
+    p.triHeader         = m_triHeader.getMutableCudaPtrDiscard();
+    p.triData           = m_triData.getMutableCudaPtrDiscard();
 
-        p.maxTileSegs       = m_maxTileSegs;
-        p.activeTiles       = m_activeTiles.getMutableCudaPtrDiscard();
-        p.tileFirstSeg      = m_tileFirstSeg.getMutableCudaPtrDiscard();
-        p.tileSegData       = m_tileSegData.getMutableCudaPtrDiscard();
-        p.tileSegNext       = m_tileSegNext.getMutableCudaPtrDiscard();
-        p.tileSegCount      = m_tileSegCount.getMutableCudaPtrDiscard();
-    }
+    p.maxBinSegs        = m_maxBinSegs;
+    p.binFirstSeg       = m_binFirstSeg.getMutableCudaPtrDiscard();
+    p.binTotal          = m_binTotal.getMutableCudaPtrDiscard();
+    p.binSegData        = m_binSegData.getMutableCudaPtrDiscard();
+    p.binSegNext        = m_binSegNext.getMutableCudaPtrDiscard();
+    p.binSegCount   		= m_binSegCount.getMutableCudaPtrDiscard();
 
-    // Initialize atomics.
-    {
-        CRAtomics& a        = *(CRAtomics*)m_module->getGlobal("g_crAtomics").getMutablePtrDiscard();
-        a.numSubtris        = m_numTris;
-        a.binCounter        = 0;
-        a.numBinSegs        = 0;
-        a.coarseCounter     = 0;
-        a.numTileSegs       = 0;
-        a.numActiveTiles    = 0;
-        a.fineCounter       = 0;
-    }
+    p.maxTileSegs       = m_maxTileSegs;
+    p.activeTiles       = m_activeTiles.getMutableCudaPtrDiscard();
+    p.tileFirstSeg      = m_tileFirstSeg.getMutableCudaPtrDiscard();
+    p.tileSegData       = m_tileSegData.getMutableCudaPtrDiscard();
+    p.tileSegNext       = m_tileSegNext.getMutableCudaPtrDiscard();
+    p.tileSegCount      = m_tileSegCount.getMutableCudaPtrDiscard();
+  }
+  
 
-    // Bind textures and surfaces.
+  // Initialize atomics.
+  {
+    CRAtomics& a        = *(CRAtomics*)m_module->getGlobal("g_crAtomics").getMutablePtrDiscard();
+    a.numSubtris        = m_numTris;
+    a.binCounter        = 0;
+    a.numBinSegs        = 0;
+    a.coarseCounter     = 0;
+    a.numTileSegs       = 0;
+    a.numActiveTiles    = 0;
+    a.fineCounter       = 0;
+  }
 
-    CUdeviceptr vertexPtr = m_vertexBuffer->getCudaPtr(m_vertexOfs);
-    S64 vertexSize = m_vertexBuffer->getSize() - m_vertexOfs;
+  // Bind textures and surfaces.
 
-    m_module->setTexRef("t_vertexBuffer", vertexPtr, vertexSize, CU_AD_FORMAT_FLOAT, 4);
-    m_module->setTexRef("t_triHeader", m_triHeader, CU_AD_FORMAT_UNSIGNED_INT32, 4);
-    m_module->setTexRef("t_triData",   m_triData, CU_AD_FORMAT_UNSIGNED_INT32, 4);
+  CUdeviceptr vertexPtr = m_vertexBuffer->getCudaPtr(m_vertexOfs);
+  S64 vertexSize = m_vertexBuffer->getSize() - m_vertexOfs;
 
-    m_module->setSurfRef("s_colorBuffer", m_colorBuffer->getCudaArray());
-    m_module->setSurfRef("s_depthBuffer", m_depthBuffer->getCudaArray());
 
-    // Use 48KB of shmem and 16KB of L1.
+fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+  m_module->setTexRef("t_vertexBuffer", vertexPtr, vertexSize, CU_AD_FORMAT_FLOAT, 4);
 
-    bool oldPreferL1 = CudaModule::setPreferL1OverShared(false);
+fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+  m_module->setTexRef("t_triHeader", m_triHeader, CU_AD_FORMAT_UNSIGNED_INT32, 4);
 
-    // Launch triangleSetup().
+fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+  m_module->setTexRef("t_triData",   m_triData, CU_AD_FORMAT_UNSIGNED_INT32, 4);
 
-    CudaModule::checkError("cuEventRecord", cuEventRecord(m_evSetupBegin, NULL));
+  m_module->setSurfRef("s_colorBuffer", m_colorBuffer->getCudaArray());
 
-    if (!m_debug.emulateTriangleSetup)
-    {
-        m_module->launchKernel( m_setupKernel,
-                                Vec2i(32, CR_SETUP_WARPS),
-                                (m_numTris - 1) / (CR_SETUP_WARPS * 32) + 1 );
-    }
-    else
-    {
-        emulateTriangleSetup();
-        m_triSubtris.getCudaPtr();
-        m_triHeader.getCudaPtr();
-        m_triData.getCudaPtr();
-    }
+  m_module->setSurfRef("s_depthBuffer", m_depthBuffer->getCudaArray());
 
-    // Launch binRaster().
 
-    CudaModule::checkError("cuEventRecord", cuEventRecord(m_evBinBegin, NULL));
+  // Use 48KB of shmem and 16KB of L1.
+  bool oldPreferL1 = CudaModule::setPreferL1OverShared(false);
 
-    if (!m_debug.emulateBinRaster)
-    {
-        m_module->launchKernel(
-            m_binKernel,
-            Vec2i(32, CR_BIN_WARPS),
-            Vec2i(CR_BIN_STREAMS_SIZE, 1));
-    }
-    else
-    {
-        emulateBinRaster();
-        m_binFirstSeg.getCudaPtr();
-        m_binTotal.getCudaPtr();
-        m_binSegData.getCudaPtr();
-        m_binSegNext.getCudaPtr();
-	    m_binSegCount.getCudaPtr();
-    }
+  // Launch triangleSetup().
+  CudaModule::checkError("cuEventRecord", cuEventRecord(m_evSetupBegin, NULL));
 
-    // Launch coarseRaster().
+  if (!m_debug.emulateTriangleSetup)
+  {
+    m_module->launchKernel( m_setupKernel,
+                            Vec2i(32, CR_SETUP_WARPS),
+                            (m_numTris - 1) / (CR_SETUP_WARPS * 32) + 1 );
+  }
+  else
+  {
+    emulateTriangleSetup();
+    m_triSubtris.getCudaPtr();
+    m_triHeader.getCudaPtr();
+    m_triData.getCudaPtr();
+  }
 
-    CudaModule::checkError("cuEventRecord", cuEventRecord(m_evCoarseBegin, NULL));
+  // Launch binRaster().
+  CudaModule::checkError("cuEventRecord", cuEventRecord(m_evBinBegin, NULL));
 
-    if (!m_debug.emulateCoarseRaster)
-    {
-        m_module->launchKernel(
-            m_coarseKernel,
-            Vec2i(32, CR_COARSE_WARPS),
-            Vec2i(m_numSMs, 1));
-    }
-    else
-    {
-        emulateCoarseRaster();
-        m_activeTiles.getCudaPtr();
-        m_tileFirstSeg.getCudaPtr();
-        m_tileSegData.getCudaPtr();
-        m_tileSegNext.getCudaPtr();
-        m_tileSegCount.getCudaPtr();
-    }
+  if (!m_debug.emulateBinRaster)
+  {
+    m_module->launchKernel( m_binKernel, 
+                            Vec2i(32, CR_BIN_WARPS), 
+                            Vec2i(CR_BIN_STREAMS_SIZE, 1));
+  }
+  else
+  {
+    emulateBinRaster();
+    m_binFirstSeg.getCudaPtr();
+    m_binTotal.getCudaPtr();
+    m_binSegData.getCudaPtr();
+    m_binSegNext.getCudaPtr();
+    m_binSegCount.getCudaPtr();
+  }
 
-    // Launch fineRaster().
+  // Launch coarseRaster().
+  CudaModule::checkError("cuEventRecord", cuEventRecord(m_evCoarseBegin, NULL));
 
-    CudaModule::checkError("cuEventRecord", cuEventRecord(m_evFineBegin, NULL));
+  if (!m_debug.emulateCoarseRaster)
+  {
+    m_module->launchKernel( m_coarseKernel,
+                            Vec2i(32, CR_COARSE_WARPS),
+                            Vec2i(m_numSMs, 1));
+  }
+  else
+  {
+    emulateCoarseRaster();
+    m_activeTiles.getCudaPtr();
+    m_tileFirstSeg.getCudaPtr();
+    m_tileSegData.getCudaPtr();
+    m_tileSegNext.getCudaPtr();
+    m_tileSegCount.getCudaPtr();
+  }
 
-    if (!m_debug.emulateFineRaster)
-    {
-        m_module->launchKernel(
-            m_fineKernel,
-            Vec2i(32, m_numFineWarps),
-            Vec2i(m_numSMs, 1));
-    }
-    else
-    {
-        emulateFineRaster();
-    }
+  // Launch fineRaster().
+  CudaModule::checkError("cuEventRecord", cuEventRecord(m_evFineBegin, NULL));
 
-    CudaModule::checkError("cuEventRecord", cuEventRecord(m_evFineEnd, NULL));
+  if (!m_debug.emulateFineRaster)
+  {
+    m_module->launchKernel( m_fineKernel,
+                            Vec2i(32, m_numFineWarps),
+                            Vec2i(m_numSMs, 1));
+  }
+  else
+  {
+    emulateFineRaster();
+  }
 
-    // Restore shmem/L1 size.
+  CudaModule::checkError("cuEventRecord", cuEventRecord(m_evFineEnd, NULL));
 
-    CudaModule::setPreferL1OverShared(oldPreferL1);
+  // Restore shmem/L1 size.
+  CudaModule::setPreferL1OverShared(oldPreferL1);
 }
 
 //------------------------------------------------------------------------
 
-Vec3i CudaRaster::setupPleq(const Vec3f& values, const Vec2i& v0, const Vec2i& d1, const Vec2i& d2, S32 area, int samplesLog2)
+Vec3i CudaRaster::setupPleq(const Vec3f& values, const Vec2i& v0,
+                            const Vec2i& d1, const Vec2i& d2, 
+                            S32 area, int samplesLog2)
 {
-    F64 t0 = (F64)values.x;
-    F64 t1 = (F64)values.y - t0;
-    F64 t2 = (F64)values.z - t0;
-    F64 xc = (t1 * (F64)d2.y - t2 * (F64)d1.y) / (F64)area;
-    F64 yc = (t2 * (F64)d1.x - t1 * (F64)d2.x) / (F64)area;
+  F64 t0 = (F64)values.x;
+  F64 t1 = (F64)values.y - t0;
+  F64 t2 = (F64)values.z - t0;
+  F64 xc = (t1 * (F64)d2.y - t2 * (F64)d1.y) / (F64)area;
+  F64 yc = (t2 * (F64)d1.x - t1 * (F64)d2.x) / (F64)area;
 
-    Vec2i center = (v0 * 2 + min(d1.x, d2.x, 0) + max(d1.x, d2.x, 0)) >> (CR_SUBPIXEL_LOG2 - samplesLog2 + 1);
-    Vec2i vc = v0 - (center << (CR_SUBPIXEL_LOG2 - samplesLog2));
+  Vec2i center = (v0 * 2 + min(d1.x, d2.x, 0) + max(d1.x, d2.x, 0)) >> (CR_SUBPIXEL_LOG2 - samplesLog2 + 1);
+  Vec2i vc = v0 - (center << (CR_SUBPIXEL_LOG2 - samplesLog2));
 
-    Vec3i pleq;
-    pleq.x = (U32)(S64)floor(xc * exp2(CR_SUBPIXEL_LOG2 - samplesLog2) + 0.5);
-    pleq.y = (U32)(S64)floor(yc * exp2(CR_SUBPIXEL_LOG2 - samplesLog2) + 0.5);
-    pleq.z = (U32)(S64)floor(t0 - xc * (F64)vc.x - yc * (F64)vc.y + 0.5);
-    pleq.z -= pleq.x * center.x + pleq.y * center.y;
-    return pleq;
+  Vec3i pleq;
+  pleq.x = (U32)(S64)floor(xc * exp2(CR_SUBPIXEL_LOG2 - samplesLog2) + 0.5);
+  pleq.y = (U32)(S64)floor(yc * exp2(CR_SUBPIXEL_LOG2 - samplesLog2) + 0.5);
+  pleq.z = (U32)(S64)floor(t0 - xc * (F64)vc.x - yc * (F64)vc.y + 0.5);
+  pleq.z -= pleq.x * center.x + pleq.y * center.y;
+  return pleq;
 }
 
 //------------------------------------------------------------------------
@@ -658,7 +674,6 @@ bool CudaRaster::setupTriangle(
     const Vec3i& vidx)
 {
     // Snap vertices.
-
     Vec2f viewScale = Vec2f(m_viewportSize << (CR_SUBPIXEL_LOG2 - 1));
     Vec3f rcpW = 1.0f / Vec3f(v0.w, v1.w, v2.w);
     Vec2i p0 = Vec2i((S32)floor(v0.x * rcpW.x * viewScale.x + 0.5f), (S32)floor(v0.y * rcpW.x * viewScale.y + 0.5f));
@@ -668,13 +683,11 @@ bool CudaRaster::setupTriangle(
     Vec2i d2 = p2 - p0;
 
     // Backfacing or degenerate => cull.
-
     S32 area = d1.x * d2.y - d1.y * d2.x;
     if (area <= 0)
         return false;
 
     // AABB falls between samples => cull.
-
     Vec2i lo = min(p0, p1, p2);
     Vec2i hi = max(p0, p1, p2);
 
@@ -687,7 +700,6 @@ bool CudaRaster::setupTriangle(
         return false;
 
     // AABB covers 1 or 2 samples => cull if they are not covered.
-
     int diff = hic.x + hic.y - loc.x - loc.y;
     if (diff <= sampleSize)
     {

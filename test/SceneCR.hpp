@@ -7,6 +7,7 @@
 #include <framework/gpu/CudaCompiler.hpp>
 
 class Camera;
+class Data;
 
 
 /// =========================================
@@ -37,24 +38,25 @@ class SceneCR
     
   public:
     SceneCR()
-        : m_numVertices(0),
-          m_numTriangles(0),
-          
-          m_pipeDirty(true),          
+        : m_pipeDirty(true),          
           m_colorBuffer(NULL),
           m_depthBuffer(NULL),
           m_cudaModule(NULL),
-          m_vertexShaderKernel(NULL)
+          m_vertexShaderKernel(NULL),
+          m_numVertices(0),
+          m_numTriangles(0)
     {}
           
     ~SceneCR();
     
-    void init();
+    void init(const Data& data);
     
     void render( const Camera& camera );
     
   
   private:
+    void initGeometry(const Data& data);
+    
     // ++ Init the cudaraster pipeline ++
     void initPipe();
     

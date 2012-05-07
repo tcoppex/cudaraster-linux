@@ -67,14 +67,18 @@ void App::_initContext( int argc, char *argv[])
 
 void App::_initObject( int argc, char *argv[])
 { 
-  /// Create the OpenGL-CudaRaster mesh data
   Data meshData;
+  
+  // Create the OpenGL-CudaRaster mesh data
   setup_cubeMesh(meshData);  
-    
-  //m_sceneCR.init(meshData);
+  
+  // Create the CudaRaster scene
+  m_sceneCR.init(meshData);
+  
+  // Create the OpenGL scene
   m_sceneGL.init(meshData);
   
-  /// Set default camera parameters
+  // Set default camera parameters
   m_camera.setViewParams( glm::vec3( 0.0f, 2.0f, 4.0f),       // Eye position
                           glm::vec3( 0.0f, 0.0f, 0.0f) );     // Eye target
 }
@@ -105,17 +109,17 @@ void App::reshape(int w, int h)
 
 void App::display()
 {
-  /*
+#if 0
   if (MODE_CUDARASTER==m_mode) {
     m_sceneCR.render( m_camera );
   } else {
     m_sceneGL.render( m_camera );
   }
-  */
+#endif
 
-  m_sceneGL.render( m_camera );
+  m_sceneCR.render( m_camera );
   assert( glGetError() == GL_NO_ERROR );
-
+  
   m_Context->flush();
 }
 
@@ -128,12 +132,29 @@ void App::keyboard( unsigned char key, int x, int y)
     break;
       
     default:
-      break;
+    break;
   }
 }
 
 void App::special( int key, int x, int y)
 {
+  
+  switch (key)
+  {
+    case 1: // F1
+      if (MODE_CUDARASTER==m_mode) {
+        m_mode = MODE_OPENGL;
+      } else {
+        m_mode = MODE_CUDARASTER;
+      }
+      // OR
+      //m_mode ^= MODE_CUDARASTER;
+    break;
+    
+    default:
+    break;
+  }
+  
   moveCamera( m_camera, key, true);
 }
 
@@ -193,8 +214,7 @@ void moveCamera( Camera& camera, int key, bool isPressed)
 }
 
 void setup_cubeMesh(Data& data)
-{
-  
+{  
   float vertices[] = 
   {
     -1.0f, -1.0f, -1.0f, //0
@@ -223,8 +243,7 @@ void setup_cubeMesh(Data& data)
   data.positions.assign( vertices, vertices + vertices_size);
   data.indices.assign( triIndices, triIndices + triIndices_size);
   data.numVertices = vertices_size / 3;
-  data.numIndices = triIndices_size;
-  
+  data.numIndices = triIndices_size;  
 }
 
 } // namespace

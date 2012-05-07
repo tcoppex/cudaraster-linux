@@ -18,6 +18,10 @@ enum VertexAttribLocation
   NUM_VATTRIB
 };
 
+///==================================
+/// Structure to create & manage 
+/// OpenGL buffers.
+///==================================
 class VertexBuffer
 {
   protected:
@@ -93,8 +97,6 @@ class VertexBuffer
     size_t getNumVertices() const { return m_numVertices; }//
     
     
-    //---
-    // not sure to keep it, but useful
     /// enable vertex arrays & draw the buffers given, in indexed mode if specified
     /// directly otherwise
     void draw() const
@@ -107,8 +109,6 @@ class VertexBuffer
       }
       disable();
     }
-    //void draw( GLenum mode, GLint first, GLsizei count);
-    //---
 };
 
 

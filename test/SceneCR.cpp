@@ -3,6 +3,7 @@
 #include "SceneCR.hpp"
 
 #include "App.hpp"
+#include "Data.hpp"
 #include "shader/PassThrough.hpp" // kernel shader
 
 
@@ -16,7 +17,6 @@ namespace {
 void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out);
 
 }
-
 
 // -----------------------------------------------
 // Constructor / Destructor
@@ -42,10 +42,9 @@ SceneCR::~SceneCR()
 // Initializers
 // -----------------------------------------------
 
-void SceneCR::init()
+void SceneCR::init(const Data& data)
 {
-  /// TODO: use more specific directories 
-  
+  // TODO: use more specific directories   
   // rasterizer's shaders sources
   m_cudaCompiler.setSourceFile( "../test/shader/PassThrough.cu" );
   
@@ -54,11 +53,59 @@ void SceneCR::init()
   m_cudaCompiler.include( "../src/" );
   
   m_cudaRaster.init();
- 
+  
   // TODO: call only if no cached version exists
   firstTimeInit();
   
   initPipe();
+  
+  initGeometry(data);
+}
+
+
+void SceneCR::initGeometry(const Data& data)
+{ 
+  fprintf(stderr, "SceneCR::initGeometry\n");
+  
+  assert( !data.indices.empty() );
+  assert( !data.positions.empty() );
+  
+   
+  m_numVertices = data.numVertices;
+  m_numTriangles = data.numIndices / 3;
+  
+  // Allocate buffers.
+  m_inVertices.resizeDiscard( m_numVertices  * sizeof(FW::InputVertex) );
+  m_outVertices.resizeDiscard( m_numVertices * sizeof(FW::ShadedVertex_passthrough) );
+  
+  
+  // Copy vertex attributes.
+  FW::InputVertex* inputVertexPtr = (FW::InputVertex*)m_inVertices.getMutablePtr();
+  for (int i = 0; i < data.numVertices; ++i)
+  {
+    //FW::InputVertex& in = inputVertexPtr[i];
+    FW::Vec3f &vertex = inputVertexPtr[i].modelPos;
+    
+    vertex.x = data.positions[3*i+0];
+    vertex.y = data.positions[3*i+1];
+    vertex.z = data.positions[3*i+2];
+    
+    printf("v %f %f %f\n", vertex.x, vertex.y, vertex.z);
+  }
+    
+  m_indices.resizeDiscard( m_numTriangles * sizeof(FW::Vec3i) );
+  
+  // Copy vertex indices.
+  FW::Vec3i* vertexIndexPtr = (FW::Vec3i*)m_indices.getMutablePtr();
+  for (int i = 0; i < m_numTriangles; ++i)
+  {
+    FW::Vec3i &id = vertexIndexPtr[i];
+    id.x = data.indices[3*i+0];
+    id.y = data.indices[3*i+1];
+    id.z = data.indices[3*i+2];
+    
+    printf("i %d %d %d\n", id.x, id.y, id.z);
+  }  
 }
 
 
@@ -80,12 +127,12 @@ void SceneCR::initPipe(void)
   if (App::kState.bDepth) renderModeFlags |= FW::RenderModeFlag_EnableDepth;
   if (App::kState.bLerp)  renderModeFlags |= FW::RenderModeFlag_EnableLerp;
   if (App::kState.bQuads) renderModeFlags |= FW::RenderModeFlag_EnableQuads;
-
+  
   m_cudaCompiler.clearDefines();
-  m_cudaCompiler.define("SAMPLES_LOG2", m_colorBuffer->getSamplesLog2());
-  m_cudaCompiler.define("RENDER_MODE_FLAGS", renderModeFlags);
-  m_cudaCompiler.define("BLEND_SHADER", 
-                        (!App::kState.bBlend) ? "BlendReplace" : "BlendSrcOver" );
+  m_cudaCompiler.define( "SAMPLES_LOG2", m_colorBuffer->getSamplesLog2());
+  m_cudaCompiler.define( "RENDER_MODE_FLAGS", renderModeFlags);
+  m_cudaCompiler.define( "BLEND_SHADER", 
+                         (!App::kState.bBlend) ? "BlendReplace" : "BlendSrcOver" );
 
   
   m_cudaModule = m_cudaCompiler.compile();
@@ -102,10 +149,11 @@ void SceneCR::initPipe(void)
   size_t paramSize = 1 * sizeof(FW::U32) + 2 * sizeof(CUdeviceptr);
   m_vertexShaderKernel = m_cudaModule->getKernel( kernelName, paramSize);
 
-  std::string pipeName("PixelPipe_" + pipePostfix);
+  std::string pipeName( "PixelPipe_" + pipePostfix );
   m_cudaRaster.setSurfaces( m_colorBuffer, m_depthBuffer);
   m_cudaRaster.setPixelPipe( m_cudaModule, pipeName);
 }
+
 
 void SceneCR::firstTimeInit(void)
 {
@@ -140,12 +188,6 @@ void SceneCR::firstTimeInit(void)
     //failIfError();
   }
   printf("\rPopulating CudaCompiler cache... Done.\n");
-
-  // Setup default state.
-  /*
-  printf("Loading mesh...\n");
-  loadMesh("scenes/fairyforest/fairyforest.obj");    
-  */
 }
 
 
@@ -195,20 +237,53 @@ void SceneCR::render( const Camera& camera )
   
   /// ========== 2) Run CudaRaster ==========
 
-  m_cudaRaster.deferredClear( FW::Vec4f(0.2f, 0.4f, 0.8f, 1.0f) );
+  m_cudaRaster.deferredClear( FW::Vec4f(0.2f, 0.4f, 0.8f, 1.0f) );  
   
   m_cudaRaster.setVertexBuffer( &m_outVertices, 0);
-  m_cudaRaster.setIndexBuffer( &m_indices, 0, m_numTriangles);
+  m_cudaRaster.setIndexBuffer( &m_indices, 0, m_numTriangles);    
+  
+  // DrawTriangles
+  //--------------------------------------------------------------  
+  fprintf( stderr, "\n-------------------------[\n");
+  fprintf( stderr, "SceneCR::drawTriangles()\n");
+  
+  FW::ShadedVertex_passthrough *outVertices = (FW::ShadedVertex_passthrough*)m_outVertices.getMutablePtr();
+  FW::InputVertex *inVertices = (FW::InputVertex*)m_inVertices.getPtr();
+  
+  printf( " INPUT Vertex | OUTPUT Vertex (expected) // OUTPUT Vertex (by shader)\n" );
+  for (int i=0; i<m_numVertices; ++i) 
+  {
+    FW::ShadedVertex_passthrough &out = outVertices[i];
+    FW::InputVertex &in = inVertices[i];
+    
+    FW::Vec4f v;
+    
+    v = FW::Vec4f( in.modelPos, 1.0f);
+    printf("%f %f %f | ", v.x, v.y, v.z);
+    
+    v = c.posToClip * v;
+    printf("%f %f %f  //  ", v.x, v.y, v.z);
+    v = out.clipPos;
+    printf("%f %f %f\n", v.x, v.y, v.z);
+  }
+  
   
   fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
   m_cudaRaster.drawTriangles();
   fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
+  
+  fprintf( stderr, "-------------------------]\n\n");
+  //--------------------------------------------------------------
+
 
   /// ========== 3) Render the buffer as an OpenGL screenquad ==========
 
-  
-  // Render the texture as a Quad mapping the screen's corners
+  // XXX XXX XXX
+  /// Render the texture as a Quad mapping the screen's corners
+  /// TODO to visualize the result
   //m_colorBuffer->resolveToScreen();
+  // XXX XXX XXX
+  
   
   
   // Show CudaRaster statistics.
@@ -224,7 +299,6 @@ void SceneCR::render( const Camera& camera )
                       (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
     );
   }
-
 }
 
 
@@ -245,9 +319,7 @@ void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out)
   COPY_MAT(2, 0); COPY_MAT(2, 1); COPY_MAT(2, 2); COPY_MAT(2, 3);
   COPY_MAT(3, 0); COPY_MAT(3, 1); COPY_MAT(3, 2); COPY_MAT(3, 3);
   
-  #undef COPY_MAT
-  /**/
-  
+  #undef COPY_MAT  
 }
 
 }

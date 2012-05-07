@@ -55,8 +55,8 @@ void SceneGL::render(const Camera& camera)
 
 void SceneGL::init(const Data& data)
 {
-  initGeometry(data);
   initShaders();
+  initGeometry(data);
 }
 
 void SceneGL::initGeometry(const Data& data)
@@ -80,10 +80,9 @@ void SceneGL::initGeometry(const Data& data)
     indices.assign( data.indices.begin(), data.indices.end());
   }
   
-  
   m_mesh.generate();
   m_mesh.complete( GL_STATIC_DRAW );
-  
+  m_mesh.cleanData();
 }
 
 void SceneGL::initShaders()
