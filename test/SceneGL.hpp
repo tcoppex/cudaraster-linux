@@ -28,7 +28,7 @@ class SceneGL
     
   private:
     void initGeometry(const Data& data);
-    void initShaders();
+    void initShader();
 };
 
 #endif //SCENEGL_HPP_

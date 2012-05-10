@@ -55,7 +55,7 @@ void SceneGL::render(const Camera& camera)
 
 void SceneGL::init(const Data& data)
 {
-  initShaders();
+  initShader();
   initGeometry(data);
 }
 
@@ -85,7 +85,7 @@ void SceneGL::initGeometry(const Data& data)
   m_mesh.cleanData();
 }
 
-void SceneGL::initShaders()
+void SceneGL::initShader()
 {
   /// GLSW, shader file manager
   glswInit();

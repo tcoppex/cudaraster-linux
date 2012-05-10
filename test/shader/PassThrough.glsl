@@ -12,7 +12,6 @@
 // IN
 layout(location = 0) in vec4 inPosition;
 
-
 // UNIFORM
 uniform mat4 uModelViewProjMatrix;
 

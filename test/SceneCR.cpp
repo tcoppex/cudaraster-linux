@@ -2,6 +2,7 @@
 
 #include "SceneCR.hpp"
 
+#include <glsw/glsw.h>
 #include "App.hpp"
 #include "Data.hpp"
 #include "shader/PassThrough.hpp" // kernel shader
@@ -13,8 +14,23 @@
 
 namespace {
 
-// translate GLUT key as generic Camera key
+// Translate GLUT key as generic Camera key
 void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out);
+
+// A simple OpenGL VAO wrapper used for the ScreenMapping shader
+// No buffers are bound, it is just used to send 3 random vertices
+// to the shader without error.
+struct ScreenQuadVAO_t
+{
+  GLuint vao;
+  
+  ScreenQuadVAO_t() : vao(0u) {}
+  ~ScreenQuadVAO_t() { if (vao) glDeleteVertexArrays( 1, &vao); }    
+  void begin() { if (!vao) glGenVertexArrays( 1, &vao); glBindVertexArray( vao ); }
+  void end() { glBindVertexArray( 0u ); }
+  void draw() { glDrawArrays( GL_TRIANGLES, 0, 3); }
+  
+} g_screenQuadVAO;
 
 }
 
@@ -47,7 +63,10 @@ void SceneCR::init(const Data& data)
   /// TODO: use more specific directories   
   
   // rasterizer's shaders sources
-  m_cudaCompiler.setSourceFile( "../test/shader/PassThrough.cu" );
+  std::string cudaShaderPath(App::kShadersPath);
+  cudaShaderPath += "PassThrough.cu";
+  
+  m_cudaCompiler.setSourceFile( cudaShaderPath.c_str() );
   
   // Uses the same include directories as the CMake script (for consistency)
   m_cudaCompiler.include( "../src/framework" );
@@ -57,10 +76,10 @@ void SceneCR::init(const Data& data)
   
   // TODO: call only if no cached version exists
   firstTimeInit();
-  
   initPipe();
   
   initGeometry(data);
+  initShader();
 }
 
 
@@ -107,8 +126,23 @@ void SceneCR::initGeometry(const Data& data)
   }
 }
 
+void SceneCR::initShader()
+{  
+  /// GLSW, shader file manager
+  glswInit();
+  glswSetPath( App::kShadersPath, ".glsl");
+  glswAddDirectiveToken("*", "#version 330 core");  
+  
+  m_screenMappingPS.generate();
+    m_screenMappingPS.addShader( VERTEX_SHADER, "ScreenMapping.Vertex");
+    m_screenMappingPS.addShader( FRAGMENT_SHADER, "ScreenMapping.Fragment");
+  m_screenMappingPS.link();
+  
+  glswShutdown();
+}
 
-void SceneCR::initPipe(void)
+
+void SceneCR::initPipe()
 {
   // Create surfaces.
   FW::Vec2i screenResolution = FW::Vec2i( App::kScreenWidth, App::kScreenHeight);  
@@ -217,8 +251,8 @@ void SceneCR::render( const Camera& camera )
   /// ========== 1) Custom VertexShader to transform the vertices ==========
   
   // Set globals. (here, it can be seen as GLSL uniforms)
-  FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal("c_constants").getMutablePtrDiscard();
-    
+  FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal
+    ("c_constants").getMutablePtrDiscard();
   
   // Translate glm matrix as CudaRaster Framework matrix
   glmToFW_matrix4f( camera.getViewProjMatrix(), c.posToClip);
@@ -248,13 +282,7 @@ void SceneCR::render( const Camera& camera )
 
   /// ========== 3) Render the buffer as an OpenGL screenquad ==========
 
-  // XXX XXX XXX
-  /// Render the texture as a Quad mapping the screen's corners
-  /// TODO to visualize the result
-  //m_colorBuffer->resolveToScreen();
-  // XXX XXX XXX
-  
-  
+  resolveToScreen();
   
   // Show CudaRaster statistics.
   if (false) //m_showStats
@@ -271,6 +299,25 @@ void SceneCR::render( const Camera& camera )
   }
 }
 
+void SceneCR::resolveToScreen()
+{
+  g_screenQuadVAO.begin();
+    
+  m_screenMappingPS.bind();
+  {
+    m_screenMappingPS.setUniform( "uTexture", 0);
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, m_colorBuffer->getGLTexture()); // 
+    
+    g_screenQuadVAO.draw();
+    
+    glBindTexture( GL_TEXTURE_2D, 0u); //
+  }
+  m_screenMappingPS.unbind();
+  
+  g_screenQuadVAO.end();
+}
+
 
 // -----------------------------------------------
 // Namespace definition
@@ -282,7 +329,7 @@ void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out)
 {
   //memcpy( &out.m00, &(in[0][0]), 16*sizeof(float));
   
-  #define COPY_MAT(i,j)  out.m##i##j = in[i][j]
+  #define COPY_MAT(i,j)  out.m##i##j = in[j][i]
   
   COPY_MAT(0, 0); COPY_MAT(0, 1); COPY_MAT(0, 2); COPY_MAT(0, 3);
   COPY_MAT(1, 0); COPY_MAT(1, 1); COPY_MAT(1, 2); COPY_MAT(1, 3);

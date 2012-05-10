@@ -5,6 +5,7 @@
 #include <cudaraster/CudaRaster.hpp>
 #include <framework/base/Defs.hpp>
 #include <framework/gpu/CudaCompiler.hpp>
+#include "engine/renderer/Program.hpp"
 
 class Camera;
 class Data;
@@ -34,7 +35,10 @@ class SceneCR
     FW::Buffer m_indices;
     int m_numVertices;
     int m_numTriangles;
-        
+    
+    // ++ ScreenMapping Program shader ++
+    Program m_screenMappingPS;
+    
     
   public:
     SceneCR()
@@ -54,13 +58,20 @@ class SceneCR
     
   
   private:
+    /// Setup geometry data as CudaRaster compatible buffers
     void initGeometry(const Data& data);
     
-    // ++ Init the cudaraster pipeline ++
+    /// Init the screen mapping shader
+    void initShader();
+    
+    /// Init the cudaraster pipeline
     void initPipe();
     
-    // ++ Precompute modules with different options if they don't exist  ++
+    /// Precompute modules with different options if they don't exist
     void firstTimeInit();
+    
+    /// Render the CudaRaster framebuffer to the screen
+    void resolveToScreen();
 };
 
 #endif //SCENECR_HPP_
