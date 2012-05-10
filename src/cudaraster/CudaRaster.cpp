@@ -235,7 +235,7 @@ void CudaRaster::setIndexBuffer(Buffer* buf, S64 ofs, int numTris)
 //------------------------------------------------------------------------
 
 void CudaRaster::drawTriangles(void)
-{
+{  
   int maxSubtrisSlack  = 4096;     // x 81B    = 324KB
   int maxBinSegsSlack  = 256;      // x 2137B  = 534KB
   int maxTileSegsSlack = 4096;     // x 136B   = 544KB

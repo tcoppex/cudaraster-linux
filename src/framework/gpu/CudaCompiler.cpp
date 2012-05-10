@@ -66,20 +66,17 @@ CudaCompiler::CudaCompiler(void)
       m_preambleHashValid     (false),
       m_memHashValid          (false)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
 }
 
 
 CudaCompiler::~CudaCompiler(void)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
 }
 
 //------------------------------------------------------------------------
 
 CudaModule* CudaCompiler::compile(bool enablePrints)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   staticInit();
 
   // Cached in memory => done.
@@ -110,7 +107,6 @@ CudaModule* CudaCompiler::compile(bool enablePrints)
 
 const std::vector<U8>* CudaCompiler::compileCubin(bool enablePrints)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   staticInit();
 
   // Cached in memory => done.
@@ -145,7 +141,6 @@ const std::vector<U8>* CudaCompiler::compileCubin(bool enablePrints)
 
 std::string CudaCompiler::compileCubinFile(bool enablePrints)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   bool bSucceed = true;
   
   staticInit();
@@ -200,7 +195,6 @@ void CudaCompiler::staticInit(void)
     return;
   }
   s_inited = true; 
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__); 
   
   // Search for CUDA on Linux system
 
@@ -312,8 +306,6 @@ void CudaCompiler::staticDeinit(void)
   s_inited = false;
 
 
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-
   flushMemCache();
   s_cubinCache.clear();
   s_moduleCache.clear();
@@ -324,7 +316,6 @@ void CudaCompiler::staticDeinit(void)
 
 void CudaCompiler::flushMemCache(void)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   for (CubinCacheMap_t::iterator it=s_cubinCache.begin(); it!=s_cubinCache.end(); ++it) {
     delete it->second;
   }
@@ -340,8 +331,6 @@ void CudaCompiler::flushMemCache(void)
 
 std::string CudaCompiler::queryEnv(const std::string& name)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   // Could be a better idea to use getenv() directly..  
   char *env = getenv(name.c_str());
   return (NULL==env)?std::string(""):std::string(env);
@@ -352,8 +341,6 @@ std::string CudaCompiler::queryEnv(const std::string& name)
 void CudaCompiler::splitPathList( std::vector<std::string>& res, 
                                   const std::string& value)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   for (size_t startIdx = 0u; startIdx < value.length();)
   {
     size_t endIdx = value.find_first_of(':', startIdx);
@@ -380,8 +367,6 @@ void CudaCompiler::splitPathList( std::vector<std::string>& res,
 
 bool CudaCompiler::fileExists(const std::string& name)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   FILE *fd = fopen( name.c_str(), "r");
   
   if (NULL != fd) {
@@ -397,7 +382,6 @@ bool CudaCompiler::fileExists(const std::string& name)
 std::string CudaCompiler::removeOption(const std::string& opts, 
                                        const std::string& tag, bool hasParam)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   std::string res = opts;
     
   for (size_t i=0u; i<res.length(); ++i)
@@ -428,8 +412,6 @@ std::string CudaCompiler::removeOption(const std::string& opts,
 
 U64 CudaCompiler::getMemHash(void)
 {  
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   if (m_memHashValid) {
     return m_memHash;
   }
@@ -485,8 +467,6 @@ U64 CudaCompiler::getMemHash(void)
 
 void CudaCompiler::createCacheDir(void)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   std::string cmd = "mkdir --parent " + m_cachePath;
   system( cmd.c_str() );
 }
@@ -495,8 +475,6 @@ void CudaCompiler::createCacheDir(void)
 
 void CudaCompiler::writeDefineFile(void)
 {  
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   File file(m_cachePath + "/defines.inl", File::Create);
   BufferedOutputStream out(file);  
   
@@ -513,7 +491,6 @@ void CudaCompiler::writeDefineFile(void)
 
 void CudaCompiler::initLogFile(const std::string& name, const std::string& firstLine)
 {  
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   File file(name, File::Create);
   BufferedOutputStream out(file);
   out.writef("%s\n", firstLine.c_str());
@@ -524,8 +501,6 @@ void CudaCompiler::initLogFile(const std::string& name, const std::string& first
 
 bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpts)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
-  
   fprintf( stderr, "%s : not COMPLETELY implemented.\n", __FUNCTION__ );
   
   
@@ -650,7 +625,6 @@ bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpt
 bool CudaCompiler::runCompiler( const std::string& cubinFile, 
                                 const std::string& finalOpts)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   std::string logFile = m_cachePath + "/compile.log";
   
   std::string cmd = s_nvccCommand + " -o \"" + cubinFile + 
@@ -681,7 +655,6 @@ bool CudaCompiler::runCompiler( const std::string& cubinFile,
 
 void CudaCompiler::setLoggedError(const std::string& description, const std::string& logFile)
 {
-  printf( "\t CudaCompiler::%s\n", __FUNCTION__);
   fprintf( stderr, "%s : not implemented.\n", __FUNCTION__ );
   
 #if 0

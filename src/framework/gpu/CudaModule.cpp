@@ -47,24 +47,18 @@ bool        CudaModule::s_preferL1      = true;
 
 CudaModule::CudaModule(const void* cubin)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   staticInit();
   checkError("cuModuleLoadData", cuModuleLoadData(&m_module, cubin));
 }
 
 CudaModule::CudaModule(const std::string& cubinFile)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   staticInit();
   checkError("cuModuleLoad", cuModuleLoad(&m_module, cubinFile.c_str()));
 }
 
 CudaModule::~CudaModule(void)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   destroysGlobals();  
   checkError("cuModuleUnload", cuModuleUnload(m_module));
 }
@@ -73,7 +67,6 @@ CudaModule::~CudaModule(void)
 
 Buffer& CudaModule::getGlobal(const std::string& name)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
   Buffer* found = m_globalHash[name];
   
   if (found) {
@@ -86,7 +79,7 @@ Buffer& CudaModule::getGlobal(const std::string& name)
   checkError( "cuModuleGetGlobal", 
               cuModuleGetGlobal(&ptr, &size, m_module, name.c_str()));
 
-  Buffer* buffer = new Buffer;
+  Buffer* buffer = new Buffer;  
   buffer->wrapCuda(ptr, size);
 
   m_globalHash[name] = buffer;
@@ -94,10 +87,7 @@ Buffer& CudaModule::getGlobal(const std::string& name)
 }
 
 void CudaModule::updateGlobals(bool async, CUstream stream)
-{  
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
+{ 
   GlobalMap_t::iterator it;
   for (it=m_globalHash.begin(); it != m_globalHash.end(); ++it) {
     it->second->setOwner( Buffer::Cuda, true, async, stream);
@@ -106,9 +96,6 @@ void CudaModule::updateGlobals(bool async, CUstream stream)
 
 void CudaModule::destroysGlobals()
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   GlobalMap_t::iterator it;
   for (it=m_globalHash.begin(); it!=m_globalHash.end(); ++it) {
     delete it->second;
@@ -120,9 +107,6 @@ void CudaModule::destroysGlobals()
 
 CUfunction CudaModule::getKernel(const std::string& name, int paramSize)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   CUfunction kernel = NULL;
   cuModuleGetFunction(&kernel, m_module, name.c_str());
   
@@ -139,9 +123,6 @@ CUfunction CudaModule::getKernel(const std::string& name, int paramSize)
 
 int CudaModule::setParami(CUfunction kernel, int offset, S32 value)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   if (kernel) {
     checkError( "cuParamSeti", cuParamSeti(kernel, offset, value));
   }
@@ -150,9 +131,6 @@ int CudaModule::setParami(CUfunction kernel, int offset, S32 value)
 
 int CudaModule::setParamf(CUfunction kernel, int offset, F32 value)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   if (kernel) {
     checkError( "cuParamSetf", cuParamSetf(kernel, offset, value));
   }
@@ -161,9 +139,6 @@ int CudaModule::setParamf(CUfunction kernel, int offset, F32 value)
 
 int CudaModule::setParamPtr(CUfunction kernel, int offset, CUdeviceptr value)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   if (kernel) {
     checkError( "cuParamSetv", cuParamSetv(kernel, offset, &value, sizeof(CUdeviceptr)));
   }
@@ -174,9 +149,6 @@ int CudaModule::setParamPtr(CUfunction kernel, int offset, CUdeviceptr value)
 
 CUtexref CudaModule::getTexRef(const std::string& name)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-
   CUtexref &texref = m_texrefHash[name];
 
   if (0 == texref) {
@@ -201,8 +173,6 @@ void CudaModule::setTexRef( const std::string& name,
                             CUarray_format format, 
                             int numComponents)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   CUtexref texRef = getTexRef(name);
   
   checkError("cuTexRefSetFormat", cuTexRefSetFormat(texRef, format, numComponents));
@@ -244,18 +214,12 @@ void CudaModule::setTexRef( const std::string& name,
 
 void CudaModule::unsetTexRef(const std::string& name)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   CUtexref texRef = getTexRef(name);
   checkError("cuTexRefSetAddress", cuTexRefSetAddress( 0, texRef, 0, 0));
 }
 
 void CudaModule::updateTexRefs(CUfunction kernel)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   if (getDriverVersion() >= 32) {
     return;
   }
@@ -272,14 +236,11 @@ void CudaModule::updateTexRefs(CUfunction kernel)
 
 CUsurfref CudaModule::getSurfRef(const std::string& name)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   
 #if (CUDA_VERSION >= 3010)
   CUsurfref surfRef;
   checkError( "cuModuleGetSurfRef", 
-              cuModuleGetSurfRef(&surfRef, m_module, name.c_str()) );
-  printf("getSurfRef(%s)\n", name.c_str());
+              cuModuleGetSurfRef(&surfRef, m_module, name.c_str()) );  
   return surfRef;
 #else
   FW_UNREF(name);
@@ -305,9 +266,6 @@ void CudaModule::launchKernel(CUfunction kernel, const Vec2i& blockSize,
                               const Vec2i& gridSize, bool async, 
                               CUstream stream)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   if (!kernel) {
     fail("CudaModule: No kernel specified!");
   }
@@ -335,9 +293,6 @@ F32 CudaModule::launchKernelTimed(CUfunction kernel, const Vec2i& blockSize,
                                   const Vec2i& gridSize, bool async, 
                                   CUstream stream, bool yield)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
-  
   // Update globals before timing.
   updateGlobals();
   updateTexRefs(kernel);
@@ -376,8 +331,6 @@ void CudaModule::staticInit(void)
     return;
   }
   
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   s_inited = true;
   s_available = false;
 
@@ -411,8 +364,6 @@ void CudaModule::staticDeinit(void)
     return;
   }  
   s_inited = false;
-
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
 
   if (s_startEvent) {
     checkError("cuEventDestroy", cuEventDestroy(s_startEvent));
@@ -454,8 +405,6 @@ void CudaModule::sync(bool yield)
     return;
   }
 
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   if (!yield || !s_endEvent) {
     checkError("cuCtxSynchronize", cuCtxSynchronize());
     return;
@@ -466,8 +415,6 @@ void CudaModule::sync(bool yield)
 
 const char* CudaModule::decodeError(CUresult res)
 {
-  printf( "\t CudaModule::%s\n", __FUNCTION__);
-  
   const char* error;
   switch (res)
   {

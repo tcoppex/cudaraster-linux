@@ -113,10 +113,12 @@ void SceneCR::initPipe(void)
   // Create surfaces.
   FW::Vec2i screenResolution = FW::Vec2i( App::kScreenWidth, App::kScreenHeight);  
   
+  if (m_colorBuffer) delete m_colorBuffer;
   m_colorBuffer = new FW::CudaSurface( screenResolution, 
                                        FW::CudaSurface::FORMAT_RGBA8, 
                                        App::kState.numSamples);
 
+  if (m_depthBuffer) delete m_depthBuffer;
   m_depthBuffer = new FW::CudaSurface( screenResolution, 
                                        FW::CudaSurface::FORMAT_DEPTH32, 
                                        App::kState.numSamples);
@@ -139,7 +141,6 @@ void SceneCR::initPipe(void)
   if (NULL == m_cudaModule) {
     exit( EXIT_FAILURE );
   }
-
 
   // Setup CudaRaster.  
   std::string pipePostfix = "passthrough";
