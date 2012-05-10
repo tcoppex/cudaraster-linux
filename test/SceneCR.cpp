@@ -44,7 +44,8 @@ SceneCR::~SceneCR()
 
 void SceneCR::init(const Data& data)
 {
-  // TODO: use more specific directories   
+  /// TODO: use more specific directories   
+  
   // rasterizer's shaders sources
   m_cudaCompiler.setSourceFile( "../test/shader/PassThrough.cu" );
   
@@ -89,23 +90,21 @@ void SceneCR::initGeometry(const Data& data)
     vertex.x = data.positions[3*i+0];
     vertex.y = data.positions[3*i+1];
     vertex.z = data.positions[3*i+2];
-    
-    printf("v %f %f %f\n", vertex.x, vertex.y, vertex.z);
   }
-    
-  m_indices.resizeDiscard( m_numTriangles * sizeof(FW::Vec3i) );
+  
   
   // Copy vertex indices.
+  m_indices.resizeDiscard( m_numTriangles * sizeof(FW::Vec3i) );
+  
   FW::Vec3i* vertexIndexPtr = (FW::Vec3i*)m_indices.getMutablePtr();
+  
   for (int i = 0; i < m_numTriangles; ++i)
   {
     FW::Vec3i &id = vertexIndexPtr[i];
     id.x = data.indices[3*i+0];
     id.y = data.indices[3*i+1];
     id.z = data.indices[3*i+2];
-    
-    printf("i %d %d %d\n", id.x, id.y, id.z);
-  }  
+  }
 }
 
 
@@ -219,6 +218,7 @@ void SceneCR::render( const Camera& camera )
   // Set globals. (here, it can be seen as GLSL uniforms)
   FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal("c_constants").getMutablePtrDiscard();
     
+  
   // Translate glm matrix as CudaRaster Framework matrix
   glmToFW_matrix4f( camera.getViewProjMatrix(), c.posToClip);
   
@@ -241,39 +241,8 @@ void SceneCR::render( const Camera& camera )
   
   m_cudaRaster.setVertexBuffer( &m_outVertices, 0);
   m_cudaRaster.setIndexBuffer( &m_indices, 0, m_numTriangles);    
-  
-  // DrawTriangles
-  //--------------------------------------------------------------  
-  fprintf( stderr, "\n-------------------------[\n");
-  fprintf( stderr, "SceneCR::drawTriangles()\n");
-  
-  FW::ShadedVertex_passthrough *outVertices = (FW::ShadedVertex_passthrough*)m_outVertices.getMutablePtr();
-  FW::InputVertex *inVertices = (FW::InputVertex*)m_inVertices.getPtr();
-  
-  printf( " INPUT Vertex | OUTPUT Vertex (expected) // OUTPUT Vertex (by shader)\n" );
-  for (int i=0; i<m_numVertices; ++i) 
-  {
-    FW::ShadedVertex_passthrough &out = outVertices[i];
-    FW::InputVertex &in = inVertices[i];
     
-    FW::Vec4f v;
-    
-    v = FW::Vec4f( in.modelPos, 1.0f);
-    printf("%f %f %f | ", v.x, v.y, v.z);
-    
-    v = c.posToClip * v;
-    printf("%f %f %f  //  ", v.x, v.y, v.z);
-    v = out.clipPos;
-    printf("%f %f %f\n", v.x, v.y, v.z);
-  }
-  
-  
-  fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
   m_cudaRaster.drawTriangles();
-  fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
-  
-  fprintf( stderr, "-------------------------]\n\n");
-  //--------------------------------------------------------------
 
 
   /// ========== 3) Render the buffer as an OpenGL screenquad ==========

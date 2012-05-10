@@ -294,13 +294,10 @@ void CudaRaster::drawTriangles(void)
     m_tileSegNext.resizeDiscard(m_maxTileSegs * sizeof(S32));
     m_tileSegCount.resizeDiscard(m_maxTileSegs * sizeof(S32));
 
-    fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
-
     // No profiling => launch stages.
     if (m_pipeSpec.profilingMode == ProfilingMode_Default)
     {
       launchStages();
-      fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
     }
     // Otherwise => setup data buffer, and launch multiple times.
     else
@@ -550,13 +547,10 @@ void CudaRaster::launchStages(void)
   S64 vertexSize = m_vertexBuffer->getSize() - m_vertexOfs;
 
 
-fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
   m_module->setTexRef("t_vertexBuffer", vertexPtr, vertexSize, CU_AD_FORMAT_FLOAT, 4);
 
-fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
   m_module->setTexRef("t_triHeader", m_triHeader, CU_AD_FORMAT_UNSIGNED_INT32, 4);
 
-fprintf( stderr, "in %s, line %d\n", __FUNCTION__, __LINE__);
   m_module->setTexRef("t_triData",   m_triData, CU_AD_FORMAT_UNSIGNED_INT32, 4);
 
   m_module->setSurfRef("s_colorBuffer", m_colorBuffer->getCudaArray());

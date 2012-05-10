@@ -48,9 +48,8 @@ class SceneCR
     {}
           
     ~SceneCR();
-    
-    void init(const Data& data);
-    
+        
+    void init(const Data& data);    
     void render( const Camera& camera );
     
   

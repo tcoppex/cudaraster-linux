@@ -47,18 +47,24 @@ bool        CudaModule::s_preferL1      = true;
 
 CudaModule::CudaModule(const void* cubin)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   staticInit();
   checkError("cuModuleLoadData", cuModuleLoadData(&m_module, cubin));
 }
 
 CudaModule::CudaModule(const std::string& cubinFile)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   staticInit();
   checkError("cuModuleLoad", cuModuleLoad(&m_module, cubinFile.c_str()));
 }
 
 CudaModule::~CudaModule(void)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   destroysGlobals();  
   checkError("cuModuleUnload", cuModuleUnload(m_module));
 }
@@ -67,6 +73,7 @@ CudaModule::~CudaModule(void)
 
 Buffer& CudaModule::getGlobal(const std::string& name)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
   Buffer* found = m_globalHash[name];
   
   if (found) {
@@ -88,6 +95,9 @@ Buffer& CudaModule::getGlobal(const std::string& name)
 
 void CudaModule::updateGlobals(bool async, CUstream stream)
 {  
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   GlobalMap_t::iterator it;
   for (it=m_globalHash.begin(); it != m_globalHash.end(); ++it) {
     it->second->setOwner( Buffer::Cuda, true, async, stream);
@@ -96,6 +106,9 @@ void CudaModule::updateGlobals(bool async, CUstream stream)
 
 void CudaModule::destroysGlobals()
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   GlobalMap_t::iterator it;
   for (it=m_globalHash.begin(); it!=m_globalHash.end(); ++it) {
     delete it->second;
@@ -107,6 +120,9 @@ void CudaModule::destroysGlobals()
 
 CUfunction CudaModule::getKernel(const std::string& name, int paramSize)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   CUfunction kernel = NULL;
   cuModuleGetFunction(&kernel, m_module, name.c_str());
   
@@ -123,6 +139,9 @@ CUfunction CudaModule::getKernel(const std::string& name, int paramSize)
 
 int CudaModule::setParami(CUfunction kernel, int offset, S32 value)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   if (kernel) {
     checkError( "cuParamSeti", cuParamSeti(kernel, offset, value));
   }
@@ -131,6 +150,9 @@ int CudaModule::setParami(CUfunction kernel, int offset, S32 value)
 
 int CudaModule::setParamf(CUfunction kernel, int offset, F32 value)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   if (kernel) {
     checkError( "cuParamSetf", cuParamSetf(kernel, offset, value));
   }
@@ -139,6 +161,9 @@ int CudaModule::setParamf(CUfunction kernel, int offset, F32 value)
 
 int CudaModule::setParamPtr(CUfunction kernel, int offset, CUdeviceptr value)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   if (kernel) {
     checkError( "cuParamSetv", cuParamSetv(kernel, offset, &value, sizeof(CUdeviceptr)));
   }
@@ -149,33 +174,23 @@ int CudaModule::setParamPtr(CUfunction kernel, int offset, CUdeviceptr value)
 
 CUtexref CudaModule::getTexRef(const std::string& name)
 {
-  CUtexref *pTexref = m_texRefHash[name];
-
-  printf("%s(%s)\n", __FUNCTION__, name.c_str());
-  //
-  if (pTexref) {
-    printf("%s: ref NOT NULL\n", __FUNCTION__);
-    return *pTexref;
-  } else {
-    printf("%s: ref NUUUUUL\n", __FUNCTION__);
-  }
-
-//
-  CUtexref texRef;
-  checkError("cuModuleGetTexRef", cuModuleGetTexRef(&texRef, m_module, name.c_str()));
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
   
-  m_texRefs.push_back(texRef);
-  m_texRefHash[name] = &m_texRefs[m_texRefs.size()-1u];
-//
 
-  return texRef;
+  CUtexref &texref = m_texrefHash[name];
+
+  if (0 == texref) {
+    checkError("cuModuleGetTexRef", cuModuleGetTexRef( &texref, m_module, name.c_str()));  
+  } 
+
+  return texref;
 }
 
 void CudaModule::setTexRef( const std::string& name, 
                             Buffer& buf, 
                             CUarray_format format, 
                             int numComponents)
-{
+{  
   setTexRef( name, buf.getCudaPtr(), buf.getSize(), format, numComponents);
 }
 
@@ -186,13 +201,12 @@ void CudaModule::setTexRef( const std::string& name,
                             CUarray_format format, 
                             int numComponents)
 {
-  fprintf( stderr, "%s BEGIN\n", __FUNCTION__);
-  fprintf( stderr, "%s\n", name.c_str());
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   CUtexref texRef = getTexRef(name);
-  fprintf( stderr, "%p\n", texRef);
+  
   checkError("cuTexRefSetFormat", cuTexRefSetFormat(texRef, format, numComponents));
   checkError("cuTexRefSetAddress", cuTexRefSetAddress(NULL, texRef, ptr, (U32)size));
-  fprintf( stderr, "%s END\n", __FUNCTION__);
 }
 
 void CudaModule::setTexRef( const std::string& name, 
@@ -220,7 +234,7 @@ void CudaModule::setTexRef( const std::string& name,
   for (int dim=0; dim<3; ++dim) 
   {
     checkError( "cuTexRefSetAddressMode", 
-                cuTexRefSetAddressMode(texRef, dim, addressMode));
+                 cuTexRefSetAddressMode(texRef, dim, addressMode));
   }
   
   checkError("cuTexRefSetFilterMode", cuTexRefSetFilterMode(texRef, filterMode));
@@ -230,20 +244,27 @@ void CudaModule::setTexRef( const std::string& name,
 
 void CudaModule::unsetTexRef(const std::string& name)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   CUtexref texRef = getTexRef(name);
   checkError("cuTexRefSetAddress", cuTexRefSetAddress( 0, texRef, 0, 0));
 }
 
 void CudaModule::updateTexRefs(CUfunction kernel)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   if (getDriverVersion() >= 32) {
     return;
   }
 
-  for (size_t i=0u; i<m_texRefs.size(); ++i)
+  TexrefMap_t::iterator it;
+  for (it=m_texrefHash.begin(); it!=m_texrefHash.end(); ++it)
   {
     checkError("cuParamSetTexRef", 
-               cuParamSetTexRef(kernel, CU_PARAM_TR_DEFAULT, m_texRefs[i]));
+               cuParamSetTexRef( kernel, CU_PARAM_TR_DEFAULT, it->second));
   }
 }
 
@@ -251,10 +272,14 @@ void CudaModule::updateTexRefs(CUfunction kernel)
 
 CUsurfref CudaModule::getSurfRef(const std::string& name)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
 #if (CUDA_VERSION >= 3010)
   CUsurfref surfRef;
   checkError( "cuModuleGetSurfRef", 
               cuModuleGetSurfRef(&surfRef, m_module, name.c_str()) );
+  printf("getSurfRef(%s)\n", name.c_str());
   return surfRef;
 #else
   FW_UNREF(name);
@@ -280,6 +305,9 @@ void CudaModule::launchKernel(CUfunction kernel, const Vec2i& blockSize,
                               const Vec2i& gridSize, bool async, 
                               CUstream stream)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   if (!kernel) {
     fail("CudaModule: No kernel specified!");
   }
@@ -294,7 +322,7 @@ void CudaModule::launchKernel(CUfunction kernel, const Vec2i& blockSize,
   updateTexRefs(kernel);
   checkError("cuFuncSetBlockShape", cuFuncSetBlockShape(kernel, blockSize.x, blockSize.y, 1));
 
-#if 0    
+#if 0
   //if (async && isAvailable_cuLaunchGridAsync())
     checkError("cuLaunchGridAsync", cuLaunchGridAsync(kernel, gridSize.x, gridSize.y, stream));
   //else
@@ -307,6 +335,9 @@ F32 CudaModule::launchKernelTimed(CUfunction kernel, const Vec2i& blockSize,
                                   const Vec2i& gridSize, bool async, 
                                   CUstream stream, bool yield)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
+  
   // Update globals before timing.
   updateGlobals();
   updateTexRefs(kernel);
@@ -345,6 +376,8 @@ void CudaModule::staticInit(void)
     return;
   }
   
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   s_inited = true;
   s_available = false;
 
@@ -378,6 +411,8 @@ void CudaModule::staticDeinit(void)
     return;
   }  
   s_inited = false;
+
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
 
   if (s_startEvent) {
     checkError("cuEventDestroy", cuEventDestroy(s_startEvent));
@@ -419,6 +454,8 @@ void CudaModule::sync(bool yield)
     return;
   }
 
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   if (!yield || !s_endEvent) {
     checkError("cuCtxSynchronize", cuCtxSynchronize());
     return;
@@ -429,6 +466,8 @@ void CudaModule::sync(bool yield)
 
 const char* CudaModule::decodeError(CUresult res)
 {
+  printf( "\t CudaModule::%s\n", __FUNCTION__);
+  
   const char* error;
   switch (res)
   {
@@ -664,7 +703,11 @@ void CudaModule::printDeviceInfo(CUdevice device)
     char deviceIdStr[16];
     sprintf( deviceIdStr, "CUDA device %d", device);
     printf("%-32s%s\n",deviceIdStr, name);
+        
     printf("%-32s%s\n", "---", "---");
+    
+    int version = getDriverVersion();
+    printf("%-32s%d.%d\n", "CUDA driver API version", version/10, version%10);
     printf("%-32s%d.%d\n", "Compute capability", major, minor);
     printf("%-32s%.0f megs\n", "Total memory", (F32)memory * exp2(-20));
 

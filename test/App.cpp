@@ -69,6 +69,8 @@ void App::_initObject( int argc, char *argv[])
 { 
   Data meshData;
   
+  printf("\n\nApp::_initObject BEGIN=====================\n");
+  
   // Create the OpenGL-CudaRaster mesh data
   setup_cubeMesh(meshData);  
   
@@ -81,6 +83,8 @@ void App::_initObject( int argc, char *argv[])
   // Set default camera parameters
   m_camera.setViewParams( glm::vec3( 0.0f, 2.0f, 4.0f),       // Eye position
                           glm::vec3( 0.0f, 0.0f, 0.0f) );     // Eye target
+                          
+  printf("App::_initObject END=====================\n\n");
 }
 
 
@@ -91,11 +95,14 @@ void App::_initObject( int argc, char *argv[])
 
 void App::reshape(int w, int h)
 {
+  printf("App::reshape\n");
+  /*
   // crappy
   if ((w != kScreenWidth) || (h != kScreenHeight)) {
     glutReshapeWindow( kScreenWidth, kScreenHeight);
     return;
   }
+  */
   
   glViewport( 0, 0, w, h);
   
@@ -109,17 +116,21 @@ void App::reshape(int w, int h)
 
 void App::display()
 {
-#if 0
+#if 1
   if (MODE_CUDARASTER==m_mode) {
     m_sceneCR.render( m_camera );
   } else {
     m_sceneGL.render( m_camera );
   }
-#endif
+#else
 
   m_sceneCR.render( m_camera );
+
+#endif
+
   assert( glGetError() == GL_NO_ERROR );
-  
+
+
   m_Context->flush();
 }
 

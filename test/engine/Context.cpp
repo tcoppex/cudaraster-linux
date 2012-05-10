@@ -61,7 +61,8 @@ int Context::createWindow( int width, int height, int flags, const char *name)
     // error
     return m_handle;
   }
-  
+
+    
   glutReshapeFunc( glut_reshape_callback );
   glutDisplayFunc( glut_display_callback );
   glutKeyboardFunc( glut_keyboard_callback );
@@ -71,6 +72,7 @@ int Context::createWindow( int width, int height, int flags, const char *name)
   glutMotionFunc( glut_motion_callback );
   glutIdleFunc( glut_idle_callback );  
   
+    
   return m_handle;
 }
 

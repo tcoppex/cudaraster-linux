@@ -43,8 +43,7 @@ class CudaModule
   private:
     typedef std::map<std::string, Buffer*> GlobalMap_t;
     
-    typedef std::vector<CUtexref> TexrefArray_t;
-    typedef std::map<std::string, CUtexref*> TexrefPtrMap_t;
+    typedef std::map<std::string, CUtexref> TexrefMap_t;    
     
     
   private:
@@ -60,8 +59,7 @@ class CudaModule
     
     GlobalMap_t m_globalHash;
     
-    TexrefArray_t m_texRefs;    
-    TexrefPtrMap_t m_texRefHash; // store pointer, not ref
+    TexrefMap_t m_texrefHash; // store pointer, not ref
     
     
   public:
@@ -76,7 +74,7 @@ class CudaModule
     Buffer& getGlobal(const std::string& name);
     
     // copy to the device if modified
-    void updateGlobals(bool async = false, CUstream stream = NULL); 
+    void updateGlobals(bool async = false, CUstream stream = NULL);
     
     void destroysGlobals();
 
