@@ -23,6 +23,11 @@
  
 #include "gpu/CudaCompiler.hpp"
 
+// UNIX dependent headers to retrieve file timestamp
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <cstdio>
 #include "base/Hash.hpp"
 #include "gpu/CudaModule.hpp"
@@ -37,7 +42,7 @@ namespace FW {
 
 bool CudaCompiler::s_inited = false;
 
-std::string CudaCompiler::s_staticCudaBinPath;// = "/usr/local/cuda/bin";//
+std::string CudaCompiler::s_staticCudaBinPath;
 std::string CudaCompiler::s_staticOptions;
 std::string CudaCompiler::s_staticPreamble;
 std::string CudaCompiler::s_staticBinaryFormat;
@@ -305,7 +310,6 @@ void CudaCompiler::staticDeinit(void)
   }
   s_inited = false;
 
-
   flushMemCache();
   s_cubinCache.clear();
   s_moduleCache.clear();
@@ -501,9 +505,6 @@ void CudaCompiler::initLogFile(const std::string& name, const std::string& first
 
 bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpts)
 {
-  fprintf( stderr, "%s : not COMPLETELY implemented.\n", __FUNCTION__ );
-  
-  
   // Preprocess.
   finalOpts = "";
   
@@ -519,7 +520,7 @@ bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpt
                     finalOpts + " \"" + m_sourceFile + 
                     "\" 2>>\"" + logFile + "\"";
 
-  initLogFile(logFile, cmd);
+  initLogFile( logFile, cmd);
   
   if (0 != system(cmd.c_str()))
   {
@@ -536,48 +537,9 @@ bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpt
   finalOpts += " ";
 
   
-  // Hash and find inline compiler options.
-  std::string optionPrefix = "// EMIT_NVCC_OPTIONS ";
-  File file(m_cachePath + "/preprocessed.cu", File::Read);
-  BufferedInputStream in(file);
-
-  
   U32 hashA = FW_HASH_MAGIC;
   U32 hashB = FW_HASH_MAGIC;
   U32 hashC = FW_HASH_MAGIC;
-  
-  /*
-  for (int lineIdx = 0;; lineIdx++)
-  {
-    const char* linePtr = in.readLine();
-  
-    if (!linePtr) {
-      break;
-    }
-    
-    // Trim from the left.
-    while (*linePtr == ' ' || *linePtr == '\t') {
-      linePtr++;
-    }
-    
-    // Directive or empty => ignore.
-    if (*linePtr == '#' || *linePtr == '\0') {
-      continue;
-    }
-
-    // Compiler option directive => record.
-    std::string line(linePtr);
-    if (line.find_first_of(optionPrefix) == 0u) {
-      finalOpts += line.substr(optionPrefix.length()) + " ";
-    }
-    // Not a comment => hash.
-    else if (line.find_first_of("//") != 0)
-    {
-      hashA += hash<std::string>(line);
-      FW_JENKINS_MIX(hashA, hashB, hashC);
-    }    
-  }
-  */
   
   // Override SM architecture.
   S32 smArch = m_overriddenSMArch;
@@ -601,23 +563,41 @@ bool CudaCompiler::runPreprocessor(std::string& cubinFile, std::string& finalOpt
     finalOpts = removeOption(finalOpts, "--machine", true);
 
 #if FW_64
-      finalOpts += "-m64 ";
+    finalOpts += "-m64 ";
 #else
-      finalOpts += "-m32 ";
+    finalOpts += "-m32 ";
 #endif
   }
-  /**/
-  
+    
   // Hash final compiler options and version.
   hashA += hash<std::string>(finalOpts);
   hashB += s_nvccVersionHash;
   FW_JENKINS_MIX(hashA, hashB, hashC);
   
-  std::string fileName = hashToString(hashB) + hashToString(hashC);
+  // File's timestamp hash to recompile when modified.
+  U64 hashD = getFileTimeStamp( m_sourceFile );
+  
+  std::string fileName = hashToString(hashB) + 
+                         hashToString(hashC) +
+                         hashToString(hashD);
+  
   cubinFile = m_cachePath + "/" + fileName + ".cubin";
   
-  /**/
   return true;
+}
+
+
+// UNIX system only
+U64 CudaCompiler::getFileTimeStamp(std::string &file)
+{
+  struct stat fileStat;
+  
+  if (0 != stat( file.c_str(), &fileStat)) {
+    return 0;
+  }
+  
+  time_t lastModif = fileStat.st_mtime;
+  return U64(lastModif);
 }
 
 //------------------------------------------------------------------------

@@ -222,6 +222,8 @@ class CudaCompiler
     void writeDefineFile(void);
     void initLogFile(const std::string& name, const std::string& firstLine);
 
+    static U64 getFileTimeStamp(std::string &file);
+
     //++++++++++++
     bool runPreprocessor(std::string& cubinFile, std::string& finalOpts);
     bool runCompiler(const std::string& cubinFile, const std::string& finalOpts);

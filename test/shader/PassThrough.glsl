@@ -32,11 +32,11 @@ void main()
 // OUT
 layout(location = 0) out vec4 fragColor;
 
+// UNIFORM
+uniform vec3 uColor = vec3( 1.0f, 0.0f, 0.0f);
 
 void main()
-{
-  const vec3 red_color = vec3( 1.0f, 0.0f, 0.0f);
-  
-  fragColor = vec4( red_color, 1.0f);
+{  
+  fragColor = vec4( uColor, 1.0f);
 }
 

@@ -14,10 +14,10 @@
 
 namespace {
 
-// Translate GLUT key as generic Camera key
+/// Translate GLUT key as generic Camera key
 void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out);
 
-// A simple OpenGL VAO wrapper used for the ScreenMapping shader
+/// A simple OpenGL VAO wrapper used for the ScreenMapping shader.
 // No buffers are bound, it is just used to send 3 random vertices
 // to the shader without error.
 struct ScreenQuadVAO_t
@@ -100,8 +100,7 @@ void SceneCR::initGeometry(const Data& data)
   
   // Allocate buffers.
   m_inVertices.resizeDiscard( m_numVertices  * sizeof(FW::InputVertex) );
-  m_outVertices.resizeDiscard( m_numVertices * sizeof(FW::ShadedVertex_passthrough) );
-  
+  m_outVertices.resizeDiscard( m_numVertices * sizeof(FW::ShadedVertex_passthrough) );  
   
   // Copy vertex attributes.
   FW::InputVertex* inputVertexPtr = (FW::InputVertex*)m_inVertices.getMutablePtr();

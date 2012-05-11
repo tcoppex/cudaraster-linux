@@ -9,7 +9,6 @@
 #include "engine/Camera.hpp"
 
 
-
 /// =========================================
 /// Sample application to test the cudaraster
 /// port.
@@ -29,7 +28,7 @@ class App : public Application
   
   public:
     // ++ Default window's resolution ++
-    // must be a multiple of CR_TILE_SIZE
+    // (must be a multiple of CR_TILE_SIZE)
     static const int kScreenWidth  = 720;
     static const int kScreenHeight = 480;  
     
@@ -55,13 +54,14 @@ class App : public Application
           numSamples(1)
       {}
     } kState;
-    
+  
+  
   private:
     Mode m_mode;
     
     SceneCR m_sceneCR;
     SceneGL m_sceneGL;
-    
+        
     Camera m_camera;
     
     

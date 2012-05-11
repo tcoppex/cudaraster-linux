@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstring>
 
+
 namespace FW {
 
 //------------------------------------------------------------------------
@@ -86,60 +87,70 @@ int BufferedInputStream::read(void* ptr, int size)
 
 char* BufferedInputStream::readLine(bool combineWithBackslash, bool normalizeWhitespace)
 {
-    if (!getBufferSize() && !fillBuffer(1))
-        return NULL;
+  if (!getBufferSize() && !fillBuffer(1)) {
+    return NULL;
+  }
+  
+  U8* ptr = getBufferPtr();
+  int size = getBufferSize();
+  int inPos = 0;
+  int outPos = 0;
+  bool pendingBackslash = false;
+  
 
-    U8* ptr = getBufferPtr();
-    int size = getBufferSize();
-    int inPos = 0;
-    int outPos = 0;
-    bool pendingBackslash = false;
-
-    for (;;)
+  for (;;)
+  {
+    U8 chr = ptr[inPos++];
+    
+    if (chr >= 32 && chr != '\\' && !pendingBackslash)
     {
-        U8 chr = ptr[inPos++];
-        if (chr >= 32 && chr != '\\' && !pendingBackslash)
-            ptr[outPos++] = chr;
-        else if (chr == '\n')
-        {
-            if (!pendingBackslash)
-                break;
-            ptr[outPos++] = ' ';
-            pendingBackslash = false;
-        }
-        else if (chr != '\r')
-        {
-            if (pendingBackslash)
-            {
-                ptr[outPos++] = '\\';
-                pendingBackslash = false;
-            }
-            if (chr == '\t' && normalizeWhitespace)
-                ptr[outPos++] = ' ';
-            else if (chr == '\\' && combineWithBackslash)
-                pendingBackslash = true;
-            else
-                ptr[outPos++] = chr;
-        }
-
-        if (inPos == size)
-        {
-            fillBuffer(inPos + 1);
-            ptr = getBufferPtr();
-            size = getBufferSize();
-            if (inPos == size)
-            {
-                if (pendingBackslash)
-                    ptr[outPos++] = '\\';
-                break;
-            }
-        }
+      ptr[outPos++] = chr;
+    } 
+    else if (chr == '\n')
+    {
+      if (!pendingBackslash) {
+        break;
+      }
+      ptr[outPos++] = ' ';
+      pendingBackslash = false;
     }
+    else if (chr != '\r')
+    {
+      if (pendingBackslash)
+      {
+        ptr[outPos++] = '\\';
+        pendingBackslash = false;
+      }
+      
+      if (chr == '\t' && normalizeWhitespace) {
+        ptr[outPos++] = ' ';
+      } else if (chr == '\\' && combineWithBackslash) {
+        pendingBackslash = true;
+      } else {
+        ptr[outPos++] = chr;
+      }
+    }
+    
+    if (inPos == size)
+    {
+      fillBuffer(inPos + 1);
+      ptr = getBufferPtr();
+      size = getBufferSize();
+      if (inPos == size)
+      {
+        if (pendingBackslash) {
+          ptr[outPos++] = '\\';
+        }
+        break;
+      }
+    }
+  }
 
-    ptr[outPos] = '\0';
-    char* line = (char*)ptr;
-    consumeBuffer(inPos);
-    return line;
+  ptr[outPos] = '\0';
+  char* line = (char*)ptr;
+  consumeBuffer(inPos);
+  
+  return line;
 }
 
 //------------------------------------------------------------------------

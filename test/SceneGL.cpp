@@ -43,6 +43,7 @@ void SceneGL::render(const Camera& camera)
   {
     const glm::mat4 &mvpMatrix = camera.getViewProjMatrix();
     m_program.setUniform( "uModelViewProjMatrix", mvpMatrix);
+    m_program.setUniform( "uColor", glm::vec3(1.0f, 0.7f, 0.0f));
     m_mesh.draw();
   }
   m_program.unbind();
