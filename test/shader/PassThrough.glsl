@@ -35,7 +35,8 @@ layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-  vec3 red_color = vec3( 1.0f, 0.0f, 0.0f);
+  const vec3 red_color = vec3( 1.0f, 0.0f, 0.0f);
+  
   fragColor = vec4( red_color, 1.0f);
 }
 

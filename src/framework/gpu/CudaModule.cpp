@@ -271,22 +271,28 @@ void CudaModule::launchKernel(CUfunction kernel, const Vec2i& blockSize,
   }
 
 #if (CUDA_VERSION >= 3000)
-  //if (isAvailable_cuFuncSetCacheConfig())
-  CUfunc_cache cache = (s_preferL1)? CU_FUNC_CACHE_PREFER_L1 : CU_FUNC_CACHE_PREFER_SHARED;  
-  checkError("cuFuncSetCacheConfig", cuFuncSetCacheConfig( kernel, cache) );
+  if (NULL != cuFuncSetCacheConfig)
+  {
+    CUfunc_cache cache = (s_preferL1)? CU_FUNC_CACHE_PREFER_L1 : 
+                                       CU_FUNC_CACHE_PREFER_SHARED;  
+    checkError("cuFuncSetCacheConfig", cuFuncSetCacheConfig( kernel, cache) );
+  }
 #endif
 
   updateGlobals();
   updateTexRefs(kernel);
   checkError("cuFuncSetBlockShape", cuFuncSetBlockShape(kernel, blockSize.x, blockSize.y, 1));
 
-#if 0
-  //if (async && isAvailable_cuLaunchGridAsync())
-    checkError("cuLaunchGridAsync", cuLaunchGridAsync(kernel, gridSize.x, gridSize.y, stream));
-  //else
-#else
-    checkError("cuLaunchGrid", cuLaunchGrid(kernel, gridSize.x, gridSize.y));
-#endif
+  if (async && (NULL != cuLaunchGridAsync)) 
+  {
+    checkError("cuLaunchGridAsync", 
+                cuLaunchGridAsync(kernel, gridSize.x, gridSize.y, stream));
+  } 
+  else 
+  {
+    checkError("cuLaunchGrid", 
+                cuLaunchGrid(kernel, gridSize.x, gridSize.y));
+  }
 }
 
 F32 CudaModule::launchKernelTimed(CUfunction kernel, const Vec2i& blockSize, 

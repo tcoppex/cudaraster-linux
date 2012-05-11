@@ -231,18 +231,22 @@ void SceneCR::firstTimeInit(void)
 
 void SceneCR::render( const Camera& camera )
 {
+  /*
   FW::Vec2i windowSize( App::kScreenWidth, App::kScreenWidth);
   
-  // Parameters changed => reinitialize pipe.  
+  // Parameters changed => reinitialize pipe.
   if (m_colorBuffer && m_colorBuffer->getSize() != windowSize) {
+    printf("reinit PIPE : resize buffer\n");
     m_pipeDirty = true;
   }  
   if (m_colorBuffer && m_colorBuffer->getNumSamples() != App::kState.numSamples) {
+    printf("reinit PIPE : update numSample\n");
     m_pipeDirty = true;
   }  
+  */
   if (m_pipeDirty) {
     initPipe();
-  }  
+  }
   m_pipeDirty = false;
   
   
@@ -251,18 +255,14 @@ void SceneCR::render( const Camera& camera )
   /// ========== 1) Custom VertexShader to transform the vertices ==========
   
   // Set globals. (here, it can be seen as GLSL uniforms)
-  FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal
-    ("c_constants").getMutablePtrDiscard();
+  FW::Constants& c = *(FW::Constants*)m_cudaModule->getGlobal("c_constants").getMutablePtrDiscard();
   
   // Translate glm matrix as CudaRaster Framework matrix
   glmToFW_matrix4f( camera.getViewProjMatrix(), c.posToClip);
   
-  
   int ofs = 0;
-  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, 
-                                    m_inVertices.getCudaPtr());
-  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, 
-                                    m_outVertices.getMutableCudaPtrDiscard());
+  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, m_inVertices.getCudaPtr());
+  ofs += m_cudaModule->setParamPtr( m_vertexShaderKernel, ofs, m_outVertices.getMutableCudaPtrDiscard());
   ofs += m_cudaModule->setParami( m_vertexShaderKernel, ofs, m_numVertices);
   
   FW::Vec2i blockSize(32, 4);
@@ -275,7 +275,7 @@ void SceneCR::render( const Camera& camera )
   m_cudaRaster.deferredClear( FW::Vec4f(0.2f, 0.4f, 0.8f, 1.0f) );  
   
   m_cudaRaster.setVertexBuffer( &m_outVertices, 0);
-  m_cudaRaster.setIndexBuffer( &m_indices, 0, m_numTriangles);    
+  m_cudaRaster.setIndexBuffer( &m_indices, 0, m_numTriangles);
     
   m_cudaRaster.drawTriangles();
 
@@ -284,16 +284,17 @@ void SceneCR::render( const Camera& camera )
 
   resolveToScreen();
   
+  
   // Show CudaRaster statistics.
   if (false) //m_showStats
   {
     FW::CudaRaster::Stats s = m_cudaRaster.getStats();
     fprintf( stderr,  "CudaRaster: setup = %.2fms, bin = %.2fms, "\
-                      "coarse = %.2fms, fine = %.2fms, total = %.2fms",
-                      s.setupTime   * 1.0e3f,
-                      s.binTime     * 1.0e3f,
-                      s.coarseTime  * 1.0e3f,
-                      s.fineTime    * 1.0e3f,
+                      "coarse = %.2fms, fine = %.2fms, total = %.2fms\n",
+                      s.setupTime  * 1.0e3f,
+                      s.binTime    * 1.0e3f,
+                      s.coarseTime * 1.0e3f,
+                      s.fineTime   * 1.0e3f,
                       (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
     );
   }
@@ -301,21 +302,31 @@ void SceneCR::render( const Camera& camera )
 
 void SceneCR::resolveToScreen()
 {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
+  if (!App::kState.bDepth) glDisable( GL_DEPTH_TEST );
+  glDepthMask( GL_FALSE );
+  
+  
   g_screenQuadVAO.begin();
-    
+  
   m_screenMappingPS.bind();
   {
     m_screenMappingPS.setUniform( "uTexture", 0);
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, m_colorBuffer->getGLTexture()); // 
+    glBindTexture( GL_TEXTURE_2D, m_colorBuffer->getGLTexture());
     
     g_screenQuadVAO.draw();
     
-    glBindTexture( GL_TEXTURE_2D, 0u); //
+    glBindTexture( GL_TEXTURE_2D, 0u);
   }
   m_screenMappingPS.unbind();
   
   g_screenQuadVAO.end();
+  
+  
+  if (App::kState.bDepth) glEnable( GL_DEPTH_TEST );
+  glDepthMask( GL_TRUE );
 }
 
 
@@ -327,16 +338,12 @@ namespace {
   
 void glmToFW_matrix4f( const glm::mat4 &in, FW::Mat4f &out)
 {
-  //memcpy( &out.m00, &(in[0][0]), 16*sizeof(float));
-  
-  #define COPY_MAT(i,j)  out.m##i##j = in[j][i]
-  
+#define COPY_MAT(i,j)  out.m##i##j = in[j][i]
   COPY_MAT(0, 0); COPY_MAT(0, 1); COPY_MAT(0, 2); COPY_MAT(0, 3);
   COPY_MAT(1, 0); COPY_MAT(1, 1); COPY_MAT(1, 2); COPY_MAT(1, 3);
   COPY_MAT(2, 0); COPY_MAT(2, 1); COPY_MAT(2, 2); COPY_MAT(2, 3);
-  COPY_MAT(3, 0); COPY_MAT(3, 1); COPY_MAT(3, 2); COPY_MAT(3, 3);
-  
-  #undef COPY_MAT  
+  COPY_MAT(3, 0); COPY_MAT(3, 1); COPY_MAT(3, 2); COPY_MAT(3, 3);  
+#undef COPY_MAT
 }
 
 }

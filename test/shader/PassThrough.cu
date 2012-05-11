@@ -12,7 +12,7 @@ using namespace FW;
 // Vertex shaders.
 //------------------------------------------------------------------------
 
-// test of simple 'passthrough' vertex shader
+// test of a simple 'passthrough' vertex shader
 extern "C" __global__ 
 void FW::vertexShader_passthrough( const InputVertex* inPtr,              // IN
                                    ShadedVertex_passthrough* outPtr,      // OUT
@@ -25,8 +25,8 @@ void FW::vertexShader_passthrough( const InputVertex* inPtr,              // IN
     return;
   }
 
-  const InputVertex&         in   =  inPtr[VertexID];
-  ShadedVertex_passthrough&  out  =  outPtr[VertexID];
+  const InputVertex&        in  = inPtr[VertexID];
+  ShadedVertex_passthrough& out = outPtr[VertexID];
 
   Vec4f inPosition      = Vec4f( in.modelPos, 1.0f);
   Mat4f &uModelViewProj = c_constants.posToClip;

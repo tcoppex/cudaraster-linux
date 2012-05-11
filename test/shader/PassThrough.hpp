@@ -8,7 +8,7 @@
 namespace FW {
 
 //------------------------------------------------------------------------
-// Constants.
+// Constants ( <=> GLSL's uniforms )
 //------------------------------------------------------------------------
 
 struct Constants
@@ -18,7 +18,7 @@ struct Constants
 
 
 //------------------------------------------------------------------------
-// Vertex attributes.
+// Vertex attributes ( <=> GLSL's vertex input attributes )
 //------------------------------------------------------------------------
 
 struct InputVertex
@@ -28,7 +28,7 @@ struct InputVertex
 
 
 //------------------------------------------------------------------------
-// Varyings.
+// Varyings. ( <=> GLSL's vertex output attributes )
 //------------------------------------------------------------------------
 
 typedef ShadedVertexBase ShadedVertex_passthrough;

@@ -23,9 +23,10 @@ App::RenderState App::kState;
 
 namespace {
 
-// translate GLUT key as generic Camera key
+/// Translate GLUT key as generic Camera key
 void moveCamera( Camera& camera, int key, bool isPressed);
 
+/// Create a simple cube mesh with indexed vertices
 void setup_cubeMesh(Data& data);
 
 }
@@ -69,7 +70,7 @@ void App::_initObject( int argc, char *argv[])
 { 
   Data meshData;
   
-  // Create the OpenGL-CudaRaster mesh data
+  // Create the mesh data
   setup_cubeMesh(meshData);  
   
   // Create the CudaRaster scene
@@ -91,18 +92,10 @@ void App::_initObject( int argc, char *argv[])
 
 void App::reshape(int w, int h)
 {
-  /*
-  // crappy
-  if ((w != kScreenWidth) || (h != kScreenHeight)) {
-    glutReshapeWindow( kScreenWidth, kScreenHeight);
-    return;
-  }
-  */
-  
   glViewport( 0, 0, w, h);
   
   const float fov = 60.0f;
-  float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+  const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
   const float zNear = 0.1f;
   const float zFar = 100.0f;
   
@@ -111,20 +104,14 @@ void App::reshape(int w, int h)
 
 void App::display()
 {
-#if 1
-  if (MODE_CUDARASTER==m_mode) {
+  if (MODE_CUDARASTER == m_mode) {
     m_sceneCR.render( m_camera );
   } else {
     m_sceneGL.render( m_camera );
   }
-#else
 
-  m_sceneCR.render( m_camera );
-
-#endif
-
-  assert( glGetError() == GL_NO_ERROR );
-
+  // check OpenGL error
+  assert( GL_NO_ERROR == glGetError() );
 
   m_Context->flush();
 }
@@ -148,13 +135,8 @@ void App::special( int key, int x, int y)
   switch (key)
   {
     case 1: // F1
-      if (MODE_CUDARASTER==m_mode) {
-        m_mode = MODE_OPENGL;
-      } else {
-        m_mode = MODE_CUDARASTER;
-      }
-      // OR
-      //m_mode ^= MODE_CUDARASTER;
+      // switch render mode
+      m_mode = App::Mode((m_mode+1) % NUM_MODE);
     break;
     
     default:
