@@ -30,21 +30,21 @@ void SceneGL::render(const Camera& camera)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
   glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
   
-  glDisable(GL_DEPTH_TEST);
+  (App::kState.bDepth) ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   
-  glDisable(GL_BLEND);
+  (App::kState.bBlend) ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  if (App::kState.bDepth)  glEnable(GL_DEPTH_TEST);
-  if (App::kState.bBlend)  glEnable(GL_BLEND);
   
   
   m_program.bind();
+  {
     const glm::mat4 &mvpMatrix = camera.getViewProjMatrix();
     m_program.setUniform( "uModelViewProjMatrix", mvpMatrix);
     m_mesh.draw();
+  }
   m_program.unbind();
 }
 

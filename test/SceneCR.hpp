@@ -39,6 +39,8 @@ class SceneCR
     // ++ ScreenMapping Program shader ++
     Program m_screenMappingPS;
     
+    bool m_showStats;
+    
     
   public:
     SceneCR()
@@ -48,13 +50,16 @@ class SceneCR
           m_cudaModule(NULL),
           m_vertexShaderKernel(NULL),
           m_numVertices(0),
-          m_numTriangles(0)
+          m_numTriangles(0),
+          m_showStats(false)
     {}
           
     ~SceneCR();
         
     void init(const Data& data);    
     void render( const Camera& camera );
+    
+    bool toggleShowStats() { m_showStats = !m_showStats; }
     
   
   private:

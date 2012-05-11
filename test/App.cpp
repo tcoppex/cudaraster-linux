@@ -139,6 +139,10 @@ void App::special( int key, int x, int y)
       m_mode = App::Mode((m_mode+1) % NUM_MODE);
     break;
     
+    case 2: // F2
+      m_sceneCR.toggleShowStats();
+    break;
+    
     default:
     break;
   }

@@ -26,9 +26,15 @@ struct ScreenQuadVAO_t
   
   ScreenQuadVAO_t() : vao(0u) {}
   ~ScreenQuadVAO_t() { if (vao) glDeleteVertexArrays( 1, &vao); }    
-  void begin() { if (!vao) glGenVertexArrays( 1, &vao); glBindVertexArray( vao ); }
-  void end() { glBindVertexArray( 0u ); }
-  void draw() { glDrawArrays( GL_TRIANGLES, 0, 3); }
+  
+  void draw()
+  { 
+    if (!vao) glGenVertexArrays( 1, &vao); 
+    
+    glBindVertexArray( vao );
+    glDrawArrays( GL_TRIANGLES, 0, 3);
+    glBindVertexArray( 0u );
+  }
   
 } g_screenQuadVAO;
 
@@ -84,13 +90,11 @@ void SceneCR::init(const Data& data)
 
 
 void SceneCR::initGeometry(const Data& data)
-{ 
-  fprintf(stderr, "SceneCR::initGeometry\n");
-  
+{
   assert( !data.indices.empty() );
-  assert( !data.positions.empty() );
+  assert( !data.positions.empty() );  
   
-   
+  
   m_numVertices = data.numVertices;
   m_numTriangles = data.numIndices / 3;
   
@@ -286,7 +290,7 @@ void SceneCR::render( const Camera& camera )
   
   
   // Show CudaRaster statistics.
-  if (false) //m_showStats
+  if (m_showStats)
   {
     FW::CudaRaster::Stats s = m_cudaRaster.getStats();
     fprintf( stderr,  "CudaRaster: setup = %.2fms, bin = %.2fms, "\
@@ -303,27 +307,20 @@ void SceneCR::render( const Camera& camera )
 void SceneCR::resolveToScreen()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
-  if (!App::kState.bDepth) glDisable( GL_DEPTH_TEST );
+  glDisable( GL_DEPTH_TEST );
   glDepthMask( GL_FALSE );
-  
-  
-  g_screenQuadVAO.begin();
-  
+      
   m_screenMappingPS.bind();
   {
     m_screenMappingPS.setUniform( "uTexture", 0);
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, m_colorBuffer->getGLTexture());
-    
+  
     g_screenQuadVAO.draw();
     
     glBindTexture( GL_TEXTURE_2D, 0u);
   }
   m_screenMappingPS.unbind();
-  
-  g_screenQuadVAO.end();
-  
   
   if (App::kState.bDepth) glEnable( GL_DEPTH_TEST );
   glDepthMask( GL_TRUE );

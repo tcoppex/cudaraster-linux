@@ -29,8 +29,9 @@ class App : public Application
   
   public:
     // ++ Default window's resolution ++
-    static const int kScreenWidth  = 960;
-    static const int kScreenHeight = 540;  
+    // must be a multiple of CR_TILE_SIZE
+    static const int kScreenWidth  = 720;
+    static const int kScreenHeight = 480;  
     
     // ++ Default shaders' path ++
     static const char* kShadersPath;
