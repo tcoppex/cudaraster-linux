@@ -1,4 +1,7 @@
 cudaraster-linux
 ================
 
-Simple Linux port of the Nvidia&#39;s GPU rasterizer (cudaraster).
+Simple Linux port of cudaraster, Nvidia GPU rasterizer (http://code.google.com/p/cudaraster/).
+
+---------------------------------
+

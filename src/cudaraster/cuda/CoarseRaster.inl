@@ -748,17 +748,19 @@ __device__ __inline__ void coarseRasterImpl(void)
             int segIdx = (ofs - 1) >> CR_TILE_SEG_LOG2;
             int segCount = ofs & (CR_TILE_SEG_SIZE - 1);
 
-            if (ofs >= 0)
+            if (ofs >= 0) 
+            {
                 tileSegNext[segIdx] = -1;
+            }
             else if (force)
             {
                 s_tileStreamCurrOfs[tileInBin] = 0;
                 tileFirstSeg[binTileIdx + tileX + tileY * c_crParams.widthTiles] = -1;
             }
 
-            if (segCount != 0)
+            if (segCount != 0) {
                 tileSegCount[segIdx] = segCount;
-
+            }
             s_scanTemp[0][(tileInBin >> 5) + 16] = __popc(__ballot(ofs >= 0 | force));
         }
 

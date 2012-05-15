@@ -1,4 +1,3 @@
-
 #include "Program.hpp"
 
 #include <cstdio>
@@ -69,4 +68,3 @@ bool Program::link()
   
   return true;
 }
-

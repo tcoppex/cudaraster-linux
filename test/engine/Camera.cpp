@@ -1,15 +1,14 @@
-
 #include "Camera.hpp"
+
+#include <cmath>
+#include <cstdio>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/euler_angles.hpp>
-
-#include <cmath>
-#include <algorithm>
-#include <stdio.h>
 
 #ifndef M_PI
   #define M_PI    3.14159265358979323846
@@ -71,12 +70,12 @@ void Camera::setViewParams(const glm::vec3 &pos, const glm::vec3 &target)
   m_position = pos;
   m_target = target;
 
-  // .Compute the view direction 
+  /// Compute the view direction 
   m_direction = m_target - m_position;
   m_direction = glm::normalize( m_direction );
   
-  // .Compute the UP vector
-  // treat the case where the direction vector is parallel to the Y Axis
+  /// Compute the UP vector
+  // (treats the case where the direction vector is parallel to the Y-axis)
   if ((fabs(m_direction.x) < FLT_EPSILON) && (fabs(m_direction.z) < FLT_EPSILON))
   {
     if (m_direction.y > 0.0f) {
@@ -96,12 +95,12 @@ void Camera::setViewParams(const glm::vec3 &pos, const glm::vec3 &target)
   m_up = glm::cross( m_direction, left);
   m_up = glm::normalize( m_up );
   
-  // .Create the matrix
+  /// Create the matrix
   m_viewMatrix = glm::lookAt( m_position, m_target, m_up);
   m_viewProjMatrix = m_projectionMatrix * m_viewMatrix;
 
 
-  // .Retrieve the yaw & pitch angle  
+  /// Retrieve the yaw & pitch angle  
   glm::vec3 zAxis = -m_direction;  // (it's also the third row of the viewMatrix)
   
   m_yawAngle = atan2f( zAxis.x, zAxis.z);
@@ -109,8 +108,6 @@ void Camera::setViewParams(const glm::vec3 &pos, const glm::vec3 &target)
   float len = sqrtf( zAxis.x*zAxis.x + zAxis.z*zAxis.z );
   m_pitchAngle = - atan2f( zAxis.y, len);
 }
-
-
 
 
 void Camera::keyboardHandler(CameraKeys key, bool bPressed)
@@ -146,7 +143,7 @@ void Camera::update(float deltaT)
   /**/
   
     
-  // .Update camera velocity  
+  /// Update camera velocity  
   if (m_bHasMoved)
   {
     m_bHasMoved = false;
@@ -170,7 +167,7 @@ void Camera::update(float deltaT)
   float inertia = m_rotationVelocity.x*m_rotationVelocity.x +
                   m_rotationVelocity.y*m_rotationVelocity.y;
   
-  // .Update camera rotation
+  /// Update camera rotation
   if (m_bHasLooked || (inertia > FLT_EPSILON))
   {    
     if (m_bHasLooked)
@@ -216,18 +213,12 @@ void Camera::update(float deltaT)
             worldLeft = glm::normalize( worldLeft );  
   
   
-  // .Compute the new view parameters
+  /// Compute the new view parameters
   m_position += cameraRotate * m_moveVelocity;  
   m_target = m_position + m_direction;
   m_up = glm::cross( m_direction, worldLeft);
   
   m_viewMatrix = glm::lookAt( m_position, m_target, m_up);
   m_viewProjMatrix = m_projectionMatrix * m_viewMatrix;
-  
-  /**/
-  
-  //Having the camera model matrix can be helpful + it holds position / target & up in
-  // its columns
-  //D3DXMatrixInverse( &m_mCameraWorld, NULL, &m_mView );
 }
 

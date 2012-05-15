@@ -19,10 +19,15 @@
 //------------------------------------------------------------------------
 
 template <int SamplesLog2>
-__device__ __inline__ void computeBarys(
-    Vec3f& bary, Vec3f& baryDX, Vec3f& baryDY,
-    const Vec3i& wpleq, const Vec3i& upleq, const Vec3i& vpleq,
-    int sampleX, int sampleY)
+__device__ __inline__ 
+void computeBarys( Vec3f& bary, 
+                   Vec3f& baryDX, 
+                   Vec3f& baryDY,
+                   const Vec3i& wpleq, 
+                   const Vec3i& upleq, 
+                   const Vec3i& vpleq,
+                   int sampleX, 
+                   int sampleY)
 {
     F32 w = 1.0f / (F32)(wpleq.x * sampleX + wpleq.y * sampleY + wpleq.z);
     F32 u = w * (F32)(upleq.x * sampleX + upleq.y * sampleY + upleq.z);
@@ -41,9 +46,14 @@ __device__ __inline__ void computeBarys(
 //------------------------------------------------------------------------
 
 template <class VertexClass, class FragmentShaderClass, int SamplesLog2, U32 RenderModeFlags>
-__device__ __inline__ void runFragmentShader(
-    FragmentShaderClass& fs,
-    int triIdx, int dataIdx, int pixelX, int pixelY, U32 centroid, volatile U32* shared)
+__device__ __inline__ 
+void runFragmentShader( FragmentShaderClass& fs,
+                        int triIdx, 
+                        int dataIdx, 
+                        int pixelX, 
+                        int pixelY, 
+                        U32 centroid, 
+                        volatile U32* shared)
 {
     // Initialize.
 
@@ -59,7 +69,6 @@ __device__ __inline__ void runFragmentShader(
     fs.m_discard        = false;
 
     // Interpolation disabled => sample varyings at the last vertex.
-
     if ((RenderModeFlags & RenderModeFlag_EnableLerp) == 0)
     {
         fs.m_center     = Vec3f(0.0f, 0.0f, 1.0f);
@@ -72,11 +81,9 @@ __device__ __inline__ void runFragmentShader(
     }
 
     // Interpolation enabled => compute barys.
-
     else
     {
         // Fetch pleqs.
-
         uint4 t1 = tex1Dfetch(t_triData, dataIdx * 4 + 1); // wx, wy, wb, ux
         uint4 t2 = tex1Dfetch(t_triData, dataIdx * 4 + 2); // uy, ub, vx, vy
         Vec3i wpleq(t1.x, t1.y, t1.z);
@@ -84,7 +91,6 @@ __device__ __inline__ void runFragmentShader(
         Vec3i vpleq(t2.z, t2.w, t3.x);
 
         // Compute barys for pixel center.
-
         computeBarys<SamplesLog2>(
             fs.m_center, fs.m_centerDX,
             fs.m_centerDY, wpleq, upleq, vpleq,
@@ -92,7 +98,6 @@ __device__ __inline__ void runFragmentShader(
             (pixelY * 2 + 1) << SamplesLog2);
 
         // Compute barys for triangle centroid.
-
         if (SamplesLog2 == 0)
         {
             fs.m_centroid = fs.m_center;
@@ -110,16 +115,20 @@ __device__ __inline__ void runFragmentShader(
     }
 
     // Run shader.
-
     fs.run();
 }
 
 //------------------------------------------------------------------------
 
 template <class BlendShaderClass>
-__device__ __inline__ void runBlendShader(
-    BlendShaderClass& bs,
-    int triIdx, int pixelX, int pixelY, int sampleIdx, U32 src, U32 dst)
+__device__ __inline__ 
+void runBlendShader( BlendShaderClass& bs,
+                     int triIdx, 
+                     int pixelX, 
+                     int pixelY, 
+                     int sampleIdx, 
+                     U32 src, 
+                     U32 dst)
 {
     bs.m_triIdx     = triIdx;
     bs.m_pixelPos   = Vec2i(pixelX, pixelY);
@@ -138,7 +147,8 @@ __device__ __inline__ void runBlendShader(
 //------------------------------------------------------------------------
 
 template <int SamplesLog2>
-__device__ __inline__ void setupCentroidLUT(volatile U8* lut)
+__device__ __inline__ 
+void setupCentroidLUT(volatile U8* lut)
 {
     for (int mask = threadIdx.x + threadIdx.y * 32; mask < (1 << (1 << SamplesLog2)); mask += blockDim.y * 32)
     {
@@ -155,14 +165,16 @@ __device__ __inline__ void setupCentroidLUT(volatile U8* lut)
 
 //------------------------------------------------------------------------
 
-__device__ __inline__ void initTileZMax(U32& tileZMax, bool& tileZUpd, volatile U32* tileDepth)
+__device__ __inline__ 
+void initTileZMax(U32& tileZMax, bool& tileZUpd, volatile U32* tileDepth)
 {
     tileZMax = CR_DEPTH_MAX;
     tileZUpd = (::min(tileDepth[threadIdx.x], tileDepth[threadIdx.x + 32]) < tileZMax);
 }
 
 template <U32 RenderModeFlags>
-__device__ __inline__ void updateTileZMax(U32& tileZMax, bool& tileZUpd, volatile U32* tileDepth, volatile U32* temp)
+__device__ __inline__ 
+void updateTileZMax(U32& tileZMax, bool& tileZUpd, volatile U32* tileDepth, volatile U32* temp)
 {
     if ((RenderModeFlags & RenderModeFlag_EnableDepth) != 0 && __any(tileZUpd))
     {

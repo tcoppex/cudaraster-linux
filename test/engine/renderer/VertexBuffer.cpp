@@ -1,9 +1,9 @@
-
 #include "VertexBuffer.hpp"
 
+#include <vector>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <vector>
+
 
     
 void VertexBuffer::generate()

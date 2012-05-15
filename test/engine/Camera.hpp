@@ -1,10 +1,8 @@
-
 #ifndef ENGINE_CAMERA_HPP_
 #define ENGINE_CAMERA_HPP_
 
 #include <cmath>
 #include <limits>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -34,19 +32,19 @@ class Camera
     glm::mat4 m_viewProjMatrix;
     //glm::mat4 m_worldMatrix;            // inverse of the view matrix
     
-    // Projection parameters
+    /// Projection parameters
     float m_fov;
     float m_zNear;
     float m_zFar;
     
-    // Look At parameters
+    /// Look At parameters
     glm::vec3 m_position;               // camera (eye) position
     glm::vec3 m_target;                 // camera target
     glm::vec3 m_up;                     // camera UP vector, compute automatically
     
     glm::vec3 m_direction;              // direction of the camera
     
-    // Camera control    
+    /// Camera control    
     float m_pitchAngle;                 // x-axis rotation angle (in radians)
     float m_yawAngle;                   // y-axis rotation angle (in radians)
     float m_moveCoef;
@@ -58,7 +56,7 @@ class Camera
     bool m_bInvertPitch;                // if true, inverts the pitch angle
     bool m_bInvertYaw;                  // if true, inverts the yaw angle    
     
-    // Events control
+    /// Events control
     bool m_keydown[NUM_CAMERAKEYS];
     bool m_bHasMoved;                   // True when camera has moved
     bool m_bHasLooked;                  // True when camera has rotated
@@ -71,14 +69,14 @@ class Camera
   public:
     Camera();
         
-    // .Update the camera attributes with user input
+    /// Update the camera attributes with user input
     void update(float deltaT=1.0f);
     
-    // .EVENT HANDLERS
+    // ++ EVENT HANDLERS ++
     void keyboardHandler(CameraKeys key, bool bPressed);
     void motionHandler(int x, int y, bool bClicked);     
    
-    // .SETTERS
+    // ++ SETTERS ++
     void setProjectionParams( float fov, float aspect, float zNear, float zFar);    
     void setViewParams(const glm::vec3 &pos, const glm::vec3 &target);
     
@@ -90,12 +88,11 @@ class Camera
     void doInvertXAxis(bool state) { m_bInvertPitch = state; }
     bool doInvertYAxis(bool state) { m_bInvertYaw = state; }
     
-    // .GETTERS
+    // ++ GETTERS ++
     const glm::mat4& getProjectionMatrix() const { return m_projectionMatrix; }
     const glm::mat4& getViewMatrix() const { return m_viewMatrix; }
     const glm::mat4& getViewProjMatrix() const { return m_viewProjMatrix; }
     
-    // Or use the row of the view matrix
     const glm::vec3& getPosition() const { return m_position; }
     const glm::vec3& getTarget() const { return m_target; }
     const glm::vec3& getDirection() const { return m_direction; }
@@ -106,8 +103,7 @@ class Camera
     
     bool isXAxisLimited() const { return m_bLimitPitchAngle; }
     bool isXAxisInverted() const { return m_bInvertPitch; }
-    bool isYAxisInverted() const { return m_bInvertYaw; }    
-    
+    bool isYAxisInverted() const { return m_bInvertYaw; }
 };
 
 #endif // ENGINE_CAMERA_HPP_

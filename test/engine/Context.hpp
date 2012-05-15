@@ -2,8 +2,8 @@
 #define ENGINE_CONTEXT_HPP_
 
 #include <GL/freeglut.h>
-
 class Listener;
+
 
 /// ================================================
 /// Handles window context creation & manages events
@@ -34,10 +34,7 @@ class Context
     Context( Listener *pListener, int argc, char *argv[]);
     ~Context();
     
-    // +++++++++++++
-    // ++ Setters ++
-    // +++++++++++++
-    
+
     inline void setGLVersion( int major, int minor)
     {
       m_glMajor = major;
@@ -61,7 +58,7 @@ class Context
     inline void flush()
     {      
       glutSwapBuffers();
-      glutPostRedisplay();
+      glutPostRedisplay();//
     }
         
     int createWindow( int width, int height, int flags, const char *name="");

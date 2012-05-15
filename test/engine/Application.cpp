@@ -1,4 +1,3 @@
-
 #include "Application.hpp"
 
 #include <cassert>
@@ -7,7 +6,6 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cuda.h>
-
 #include "Context.hpp"
 
 
@@ -70,7 +68,6 @@ void Application::motion(int x, int y)
 
 void Application::idle()
 {
-  glutPostRedisplay();
 }
 
 // -----------------------------------------------
@@ -78,6 +75,8 @@ void Application::idle()
 
 void Application::_initContext( int argc, char *argv[])
 {
+  // Default context initialization
+
   m_Context = new Context( this, argc, argv);
   
   m_Context->setGLVersion( 2, 1);
@@ -116,7 +115,7 @@ void Application::_initOpenGL( int argc, char *argv[])
   /// Init OpenGL wrapper
   //OpenGL::Init();
   
-  // sometimes the error handler is not initialized
+  // The OpenGL error handler may not be initialized
   glGetError();
 }
 
@@ -131,4 +130,5 @@ void Application::_initCUDA( int argc, char *argv[])
 
 void Application::_initObject( int argc, char *argv[])
 {
+  // initialize application specific datas
 }

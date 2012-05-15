@@ -1,12 +1,11 @@
-
 #ifndef DATA_HPP_
 #define DATA_HPP_
 
 #include <vector>
 
 ///================================
-/// Keep data to share with
-/// 
+/// Keep geometry data to share with
+/// SceneGL & SceneCR
 ///================================
 struct Data
 {

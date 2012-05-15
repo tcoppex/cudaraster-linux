@@ -1,9 +1,9 @@
-
 #include "Context.hpp"
 
 #include <cassert>
 #include <GL/freeglut.h>
 #include "Listener.hpp"
+
 
 namespace { 
 
@@ -21,7 +21,9 @@ void glut_idle_callback();
 } // namespace 
 
 
+
 // -------------------
+
 
 
 Context::Context( Listener *pListener, int argc, char *argv[])
@@ -48,6 +50,9 @@ Context::Context( Listener *pListener, int argc, char *argv[])
 Context::~Context()
 {
 }
+
+
+// -------------------
 
 
 int Context::createWindow( int width, int height, int flags, const char *name)
@@ -85,41 +90,49 @@ namespace {
 void glut_reshape_callback(int w, int h)
 {
   g_pListener->reshape(w, h);
+  glutPostRedisplay();
 }
 
 void glut_display_callback()
 {
   g_pListener->display();
+  glutPostRedisplay();
 }
 
 void glut_keyboard_callback(unsigned char key, int x, int y)
 {
-  g_pListener->keyboard( key, x, y);    
+  g_pListener->keyboard( key, x, y);
+  glutPostRedisplay();
 }
 
 void glut_special_callback(int key, int x, int y)
 {
   g_pListener->special( key, x, y);
+  glutPostRedisplay();
 }
 
 void glut_specialUp_callback(int key, int x, int y)
 {
   g_pListener->specialUp( key, x, y);
+  glutPostRedisplay();
 }
 
 void glut_motion_callback(int x, int y)
 {
   g_pListener->motion( x, y);
+  glutPostRedisplay();
 }
 
 void glut_mouse_callback(int button, int state, int x, int y)
 {
   g_pListener->mouse( button, state, x, y);
+  glutPostRedisplay();
 }
 
 void glut_idle_callback()
 {
   g_pListener->idle();
+  glutPostRedisplay();
 }
   
 } // namespace 

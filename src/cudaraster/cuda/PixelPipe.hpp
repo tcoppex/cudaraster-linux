@@ -29,9 +29,9 @@ namespace FW
 
 enum
 {
-    RenderModeFlag_EnableDepth  = 1 << 0,   // Enable depth test and depth write.
-    RenderModeFlag_EnableLerp   = 1 << 1,   // Enable varying interpolation.
-    RenderModeFlag_EnableQuads  = 1 << 2,   // Enable numerical derivatives in fragment shader. Degrades performance.
+  RenderModeFlag_EnableDepth  = 1 << 0,   // Enable depth test and depth write.
+  RenderModeFlag_EnableLerp   = 1 << 1,   // Enable varying interpolation.
+  RenderModeFlag_EnableQuads  = 1 << 2,   // Enable numerical derivatives in fragment shader. Degrades performance.
 };
 
 //------------------------------------------------------------------------
@@ -40,10 +40,10 @@ enum
 
 struct ShadedVertexBase
 {
-    Vec4f   clipPos;
+  Vec4f   clipPos;
 
-    // Subclass can add a Vec4f for each varying.
-    // Other data types are forbidden.
+  // Subclass can add a Vec4f for each varying.
+  // Other data types are forbidden.
 };
 
 //------------------------------------------------------------------------
@@ -53,47 +53,47 @@ struct ShadedVertexBase
 class FragmentShaderBase
 {
 public:
-    __device__ __inline__ Vec4f getVaryingAtVertex  (int varyingIdx, int vertIdx) const;
-    __device__ __inline__ Vec4f interpolateVarying  (int varyingIdx, const Vec3f& bary) const;
+  __device__ __inline__ Vec4f getVaryingAtVertex  (int varyingIdx, int vertIdx) const;
+  __device__ __inline__ Vec4f interpolateVarying  (int varyingIdx, const Vec3f& bary) const;
 
-    // Numerical derivatives (only valid when RenderModeFlag_EnableQuads is set).
+  // Numerical derivatives (only valid when RenderModeFlag_EnableQuads is set).
 
 #if FW_CUDA
-    __device__ __inline__ F32   dFdx                (F32 v) const { m_shared[threadIdx.x] = v; return m_shared[threadIdx.x | 1] - m_shared[threadIdx.x & ~1]; }
-    __device__ __inline__ F32   dFdy                (F32 v) const { m_shared[threadIdx.x] = v; return m_shared[threadIdx.x | 2] - m_shared[threadIdx.x & ~2]; }
-    __device__ __inline__ Vec2f dFdx                (const Vec2f& v) const { return Vec2f(dFdx(v.x), dFdx(v.y)); }
-    __device__ __inline__ Vec2f dFdy                (const Vec2f& v) const { return Vec2f(dFdy(v.x), dFdy(v.y)); }
-    __device__ __inline__ Vec3f dFdx                (const Vec3f& v) const { return Vec3f(dFdx(v.x), dFdx(v.y), dFdx(v.z)); }
-    __device__ __inline__ Vec3f dFdy                (const Vec3f& v) const { return Vec3f(dFdy(v.x), dFdy(v.y), dFdy(v.z)); }
-    __device__ __inline__ Vec4f dFdx                (const Vec4f& v) const { return Vec4f(dFdx(v.x), dFdx(v.y), dFdx(v.z), dFdx(v.w)); }
-    __device__ __inline__ Vec4f dFdy                (const Vec4f& v) const { return Vec4f(dFdy(v.x), dFdy(v.y), dFdy(v.z), dFdy(v.w)); }
+  __device__ __inline__ F32   dFdx                (F32 v) const { m_shared[threadIdx.x] = v; return m_shared[threadIdx.x | 1] - m_shared[threadIdx.x & ~1]; }
+  __device__ __inline__ F32   dFdy                (F32 v) const { m_shared[threadIdx.x] = v; return m_shared[threadIdx.x | 2] - m_shared[threadIdx.x & ~2]; }
+  __device__ __inline__ Vec2f dFdx                (const Vec2f& v) const { return Vec2f(dFdx(v.x), dFdx(v.y)); }
+  __device__ __inline__ Vec2f dFdy                (const Vec2f& v) const { return Vec2f(dFdy(v.x), dFdy(v.y)); }
+  __device__ __inline__ Vec3f dFdx                (const Vec3f& v) const { return Vec3f(dFdx(v.x), dFdx(v.y), dFdx(v.z)); }
+  __device__ __inline__ Vec3f dFdy                (const Vec3f& v) const { return Vec3f(dFdy(v.x), dFdy(v.y), dFdy(v.z)); }
+  __device__ __inline__ Vec4f dFdx                (const Vec4f& v) const { return Vec4f(dFdx(v.x), dFdx(v.y), dFdx(v.z), dFdx(v.w)); }
+  __device__ __inline__ Vec4f dFdy                (const Vec4f& v) const { return Vec4f(dFdy(v.x), dFdy(v.y), dFdy(v.z), dFdy(v.w)); }
 #endif
 
-    // Override by the subclass:
+  // Override by the subclass:
 
-    __device__ __inline__ void  run                 (void) {}
+  __device__ __inline__ void  run                 (void) {}
 
 public:
-    // Inputs.
+  // Inputs.
 
-    S32     m_triIdx;       // Triangle index.
-    Vec3i   m_vertIdx;      // Vertex indices.
-    Vec2i   m_pixelPos;     // Integer pixel position.
-    S32     m_vertexBytes;  // sizeof(ShadedVertexClass)
-    volatile F32* m_shared; // 32 entries for the warp.
+  S32     m_triIdx;       // Triangle index.
+  Vec3i   m_vertIdx;      // Vertex indices.
+  Vec2i   m_pixelPos;     // Integer pixel position.
+  S32     m_vertexBytes;  // sizeof(ShadedVertexClass)
+  volatile F32* m_shared; // 32 entries for the warp.
 
-    Vec3f   m_center;       // Barycentrics at pixel center.
-    Vec3f   m_centerDX;     // dFdx(m_center)
-    Vec3f   m_centerDY;     // dFdy(m_center)
+  Vec3f   m_center;       // Barycentrics at pixel center.
+  Vec3f   m_centerDX;     // dFdx(m_center)
+  Vec3f   m_centerDY;     // dFdy(m_center)
 
-    Vec3f   m_centroid;     // Barycentrics at triangle centroid.
-    Vec3f   m_centroidDX;   // dFdx(m_center)
-    Vec3f   m_centroidDY;   // dFdy(m_center)
+  Vec3f   m_centroid;     // Barycentrics at triangle centroid.
+  Vec3f   m_centroidDX;   // dFdx(m_center)
+  Vec3f   m_centroidDY;   // dFdy(m_center)
 
-    // Outputs.
+  // Outputs.
 
-    U32     m_color;        // ABGR_8888.
-    bool    m_discard;      // True to cull the fragment.
+  U32     m_color;        // ABGR_8888.
+  bool    m_discard;      // True to cull the fragment.
 };
 
 //------------------------------------------------------------------------
@@ -103,24 +103,24 @@ public:
 class BlendShaderBase
 {
 public:
-    // Override by the subclass:
+  // Override by the subclass:
 
-    __device__ __inline__ bool  needsDst    (void)  { return true; } // Must be a constant.
-    __device__ __inline__ void  run         (void)  {}
+  __device__ __inline__ bool  needsDst    (void)  { return true; } // Must be a constant.
+  __device__ __inline__ void  run         (void)  {}
 
 public:
-    // Inputs.
+  // Inputs.
 
-    S32     m_triIdx;       // Triangle index.
-    Vec2i   m_pixelPos;     // Integer pixel position.
-    S32     m_sampleIdx;    // MSAA sample index within the pixel.
-    U32     m_src;          // Color from fragment shader.
-    U32     m_dst;          // Color from framebuffer.
-    
-    // Outputs.
-    
-    U32     m_color;        // Blended color.
-    bool    m_writeColor;   // False to disable color write.
+  S32     m_triIdx;       // Triangle index.
+  Vec2i   m_pixelPos;     // Integer pixel position.
+  S32     m_sampleIdx;    // MSAA sample index within the pixel.
+  U32     m_src;          // Color from fragment shader.
+  U32     m_dst;          // Color from framebuffer.
+  
+  // Outputs.
+  
+  U32     m_color;        // Blended color.
+  bool    m_writeColor;   // False to disable color write.
 };
 
 //------------------------------------------------------------------------
@@ -129,7 +129,7 @@ public:
 
 struct GouraudVertex : ShadedVertexBase
 {
-    Vec4f   color;          // Varying 0.
+  Vec4f   color;          // Varying 0.
 };
 
 //------------------------------------------------------------------------
@@ -137,7 +137,7 @@ struct GouraudVertex : ShadedVertexBase
 class GouraudShader : public FragmentShaderBase
 {
 public:
-    __device__ __inline__ void  run         (void);
+  __device__ __inline__ void  run         (void);
 };
 
 //------------------------------------------------------------------------
@@ -145,8 +145,8 @@ public:
 class BlendReplace : public BlendShaderBase // dst = src
 {
 public:
-    __device__ __inline__ bool  needsDst    (void)  { return false; }
-    __device__ __inline__ void  run         (void)  { m_color = m_src; }
+  __device__ __inline__ bool  needsDst    (void)  { return false; }
+  __device__ __inline__ void  run         (void)  { m_color = m_src; }
 };
 
 //------------------------------------------------------------------------
@@ -154,7 +154,7 @@ public:
 class BlendSrcOver : public BlendShaderBase // dst = lerp(dst, src, src.a)
 {
 public:
-    __device__ __inline__ void  run         (void);
+  __device__ __inline__ void  run         (void);
 };
 
 //------------------------------------------------------------------------
@@ -162,7 +162,7 @@ public:
 class BlendAdditive : public BlendShaderBase // dst += src
 {
 public:
-    __device__ __inline__ void  run         (void);
+  __device__ __inline__ void  run         (void);
 };
 
 //------------------------------------------------------------------------
@@ -170,8 +170,8 @@ public:
 class BlendDepthOnly : public BlendShaderBase // dst = dst
 {
 public:
-    __device__ __inline__ bool  needsDst    (void)  { return false; }
-    __device__ __inline__ void  run         (void)  { m_writeColor = false; }
+  __device__ __inline__ bool  needsDst    (void)  { return false; }
+  __device__ __inline__ void  run         (void)  { m_writeColor = false; }
 };
 
 //------------------------------------------------------------------------

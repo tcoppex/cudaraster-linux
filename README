@@ -33,11 +33,4 @@
   
   thirdparty/ > External libraries [not used currently].
   
-  
- ø 2 TODO ----------------------------------------------------------------------
- 
-  Change the structure
-  
-  make it recompile the kernel shader when it changes
-  
 ================================================================================

@@ -366,20 +366,19 @@ CudaRaster::Stats CudaRaster::getStats(void)
 
 std::string CudaRaster::getProfilingInfo(void)
 {
-  fprintf( stderr, "%s: not implemented yet.\n", __FUNCTION__ );
-  /*
-    std::string s;
-    s += "\n";
+  char buffer[512];
+  
+  /**/
+  
+    std::string s("\n");
 
-    if (!m_module)
-    {
+    if (!m_module) {
         s += "Pixel pipe not set!\n";
     }
 
     // ProfilingMode_Default.
-
     if (m_pipeSpec.profilingMode == ProfilingMode_Default)
-    {
+    {        
         Stats               stats           = getStats();
         const CRAtomics&    atomics         = *(const CRAtomics*)m_module->getGlobal("g_crAtomics").getPtr();
         F32                 pctCoef         = 100.0f / (stats.setupTime + stats.binTime + stats.coarseTime + stats.fineTime);
@@ -390,18 +389,39 @@ std::string CudaRaster::getProfilingInfo(void)
         s += "ProfilingMode_Default\n";
         s += "---------------------\n";
         s += "\n";
-        s += sprintf("%-16s%.3f ms (%.0f%%)\n", "triangleSetup",    stats.setupTime * 1.0e3f,   stats.setupTime * pctCoef);
-        s += sprintf("%-16s%.3f ms (%.0f%%)\n", "binRaster",        stats.binTime * 1.0e3f,     stats.binTime * pctCoef);
-        s += sprintf("%-16s%.3f ms (%.0f%%)\n", "coarseRaster",     stats.coarseTime * 1.0e3f,  stats.coarseTime * pctCoef);
-        s += sprintf("%-16s%.3f ms (%.0f%%)\n", "fineRaster",       stats.fineTime * 1.0e3f,    stats.fineTime * pctCoef);
+        
+        sprintf( buffer, "%-16s%.3f ms (%.0f%%)\n", "triangleSetup", 
+                 stats.setupTime * 1.0e3f, stats.setupTime * pctCoef);
+        s += buffer;
+                      
+        sprintf( buffer, "%-16s%.3f ms (%.0f%%)\n", "binRaster", 
+                 stats.binTime * 1.0e3f, stats.binTime * pctCoef);
+        s += buffer;
+                      
+        sprintf( buffer, "%-16s%.3f ms (%.0f%%)\n", "coarseRaster", 
+                stats.coarseTime * 1.0e3f, stats.coarseTime * pctCoef);
+        s += buffer;
+                      
+        sprintf( buffer, "%-16s%.3f ms (%.0f%%)\n", "fineRaster", 
+                 stats.fineTime * 1.0e3f, stats.fineTime * pctCoef);
+        s += buffer;
+        
         s += "\n";
-        s += sprintf("%-16s%-10d(%.1f MB)\n", "numSubtris",   atomics.numSubtris,  (F32)(atomics.numSubtris * bytesPerSubtri) * exp2(-20));
-        s += sprintf("%-16s%-10d(%.1f MB)\n", "numBinSegs",   atomics.numBinSegs,  (F32)(atomics.numBinSegs * bytesPerBinSeg) * exp2(-20));
-        s += sprintf("%-16s%-10d(%.1f MB)\n", "numTileSegs",  atomics.numTileSegs, (F32)(atomics.numTileSegs * bytesPerTileSeg) * exp2(-20));
+        
+        sprintf( buffer, "%-16s%-10d(%.1f MB)\n", "numSubtris",   
+                 atomics.numSubtris,  (F32)(atomics.numSubtris * bytesPerSubtri) * exp2(-20));
+        s += buffer;
+        
+        sprintf(buffer, "%-16s%-10d(%.1f MB)\n", "numBinSegs",   
+                atomics.numBinSegs,  (F32)(atomics.numBinSegs * bytesPerBinSeg) * exp2(-20));
+        s += buffer;
+                      
+        sprintf(buffer, "%-16s%-10d(%.1f MB)\n", "numTileSegs",  
+                atomics.numTileSegs, (F32)(atomics.numTileSegs * bytesPerTileSeg) * exp2(-20));
+        s += buffer;
     }
 
     // ProfilingMode_Counters.
-
     else if (m_pipeSpec.profilingMode == ProfilingMode_Counters)
     {
         const S64*  counterPtr  = (const S64*)m_profData.getPtr();
@@ -423,7 +443,8 @@ std::string CudaRaster::getProfilingInfo(void)
                 num += counterPtr[idx + 0];
                 denom += counterPtr[idx + 32];
             }
-            s += sprintf(g_profCounters[i].format, (F64)num / max((F64)denom, 1.0));
+            sprintf( buffer, g_profCounters[i].format, (F64)num / max((F64)denom, 1.0));
+            s += buffer;            
         }
     }
 
@@ -442,19 +463,24 @@ std::string CudaRaster::getProfilingInfo(void)
             for (int j = 0; j < numWarps; j++)
             {
                 U32 warpTotal = 0;
-                for (int k = 0; k < 32; k++)
-                    warpTotal += timerPtr[(j * numTimers + i) * 32 + k];
+                for (int k = 0; k < 32; k++) {
+                  warpTotal += timerPtr[(j * numTimers + i) * 32 + k];
+                }
                 launchTotal += warpTotal;
             }
-            timers.add((F64)launchTotal);
+            timers.push_back((F64)launchTotal);
         }
-        timers.add(0.0);
+        timers.push_back(0.0);
 
         s += "ProfilingMode_Timers\n";
         s += "--------------------\n";
         s += "\n";
         for (int i = 0; i < numTimers; i++)
-            s += sprintf(g_profTimers[i].format, timers[i] / max(timers[g_profTimers[i].parent], 1.0) * 100.0);
+        {
+          sprintf( buffer, g_profTimers[i].format, 
+                   timers[i] / max(timers[g_profTimers[i].parent], 1.0) * 100.0);
+          s += buffer;
+        }
     }
 
     else
@@ -464,7 +490,9 @@ std::string CudaRaster::getProfilingInfo(void)
 
     s += "\n";
     return s;
-  */
+  
+  /**/
+  
   return "";
 }
 

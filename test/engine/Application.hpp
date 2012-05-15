@@ -3,7 +3,6 @@
 
 #include "Listener.hpp"
 #include <cstdlib>
-
 class Context;
 
 

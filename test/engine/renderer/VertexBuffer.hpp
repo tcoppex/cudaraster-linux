@@ -1,4 +1,3 @@
-
 #ifndef RENDERER_VERTEXBUFFER_HPP
 #define RENDERER_VERTEXBUFFER_HPP
 
@@ -17,6 +16,7 @@ enum VertexAttribLocation
   
   NUM_VATTRIB
 };
+
 
 ///==================================
 /// Structure to create & manage 
@@ -64,19 +64,19 @@ class VertexBuffer
     virtual void generate();
     virtual void destroy();
 
-    /** Destroy the client side memory (CPU) */
+    /// Destroy the client side memory (CPU)
     virtual void cleanData();
 
-    /** Set the VAO parameters & send data to the GPU */
+    /// Set the VAO parameters & send data to the GPU
     virtual void complete(GLenum usage);
     
     void bind() const;        
     static void unbind();
     
-    /** Enable vertex attribs arrays (for rendering) */
+    /// Enable vertex attribs arrays (for rendering)
     virtual void enable() const;
     
-    /** Disable vertex attribs arrays */
+    /// Disable vertex attribs arrays
     virtual void disable() const;
     
     

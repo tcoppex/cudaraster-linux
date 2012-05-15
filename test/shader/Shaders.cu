@@ -141,10 +141,11 @@ class FragmentShader_texPhong : public FragmentShaderBase
       float4 v0 = tex2D(t_textureAtlas, tx * m0.x + m0.z, ty * m0.y + m0.w);
       float4 v1 = tex2D(t_textureAtlas, tx * m1.x + m1.z, ty * m1.y + m1.w);
       
-      return lerp(Vec4f(v0.x, v0.y, v0.z, v0.w), Vec4f(v1.x, v1.y, v1.z, v1.w), 
-                  lod - (F32)levelIdx);
+      return lerp( Vec4f(v0.x, v0.y, v0.z, v0.w), 
+                   Vec4f(v1.x, v1.y, v1.z, v1.w), 
+                   lod - (F32)levelIdx);
     }
-
+    
     __device__ __inline__ 
     void run(void)
     {
@@ -181,14 +182,14 @@ class FragmentShader_texPhong : public FragmentShaderBase
         }
         
         if (material.alphaTexture.size.x != 0.0f) {
-            diffuseColor.w = texture2D(material.alphaTexture, tex, texDX, texDY).y;
+          diffuseColor.w = texture2D(material.alphaTexture, tex, texDX, texDY).y;
         }
         
         // Alpha test.
         if (diffuseColor.w < 0.5f)
         {
-            m_discard = true;
-            return;
+          m_discard = true;
+          return;
         }
 
         // Shading.

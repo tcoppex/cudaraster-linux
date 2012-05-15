@@ -74,6 +74,7 @@ void SceneCR::init(const Data& data)
   
   m_cudaCompiler.setSourceFile( cudaShaderPath.c_str() );
   
+  
   // Uses the same include directories as the CMake script (for consistency)
   m_cudaCompiler.include( "../src/framework" );
   m_cudaCompiler.include( "../src/" );
@@ -81,7 +82,7 @@ void SceneCR::init(const Data& data)
   m_cudaRaster.init();
   
   // TODO: call only if no cached version exists
-  firstTimeInit();
+  //firstTimeInit();
   initPipe();
   
   initGeometry(data);
@@ -171,10 +172,12 @@ void SceneCR::initPipe()
   m_cudaCompiler.define( "RENDER_MODE_FLAGS", renderModeFlags);
   m_cudaCompiler.define( "BLEND_SHADER", 
                          (!App::kState.bBlend) ? "BlendReplace" : "BlendSrcOver" );
-
+  
+  // ProfilingMode : Default, Counters or Timers
+  m_cudaCompiler.define("CR_PROFILING_MODE", ProfilingMode_Counters); //
   
   m_cudaModule = m_cudaCompiler.compile();
-    
+  
   if (NULL == m_cudaModule) {
     exit( EXIT_FAILURE );
   }
@@ -194,6 +197,7 @@ void SceneCR::initPipe()
 
 void SceneCR::firstTimeInit(void)
 {
+#if 0
   printf("Performing first-time initialization.\n");
   printf("This will take a while.\n");
   printf("\n");
@@ -221,10 +225,14 @@ void SceneCR::firstTimeInit(void)
 
     m_cudaCompiler.define("BLEND_SHADER", (blend == 0) ? "BlendReplace" : 
                                                          "BlendSrcOver" );
+      
+    m_cudaCompiler.define("CR_PROFILING_MODE", ProfilingMode_Default); //
+                                                         
     m_cudaCompiler.compile(false);
     //failIfError();
   }
   printf("\rPopulating CudaCompiler cache... Done.\n");
+#endif
 }
 
 
@@ -245,8 +253,9 @@ void SceneCR::render( const Camera& camera )
   if (m_colorBuffer && m_colorBuffer->getNumSamples() != App::kState.numSamples) {
     printf("reinit PIPE : update numSample\n");
     m_pipeDirty = true;
-  }  
+  } 
   */
+  
   if (m_pipeDirty) {
     initPipe();
   }
@@ -300,6 +309,10 @@ void SceneCR::render( const Camera& camera )
                       s.fineTime   * 1.0e3f,
                       (s.setupTime + s.binTime + s.coarseTime + s.fineTime) * 1.0e3f
     );
+  }
+  else
+  {
+    fprintf( stderr, "%s\n", m_cudaRaster.getProfilingInfo().c_str() );
   }
 }
 

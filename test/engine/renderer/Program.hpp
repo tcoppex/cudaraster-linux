@@ -13,7 +13,9 @@ enum ShaderType
   FRAGMENT_SHADER = GL_FRAGMENT_SHADER
 };
 
+/// =================================
 /// Class wrapper for OpenGL Program
+/// =================================
 class Program
 {
   private:
@@ -152,7 +154,9 @@ class Program
     inline bool isGenerated() {return m_id!=0u;}
 
   private:
-    //DISALLOW_COPY_AND_ASSIGN(Program);
+    // ++ Disallow copies & affectations ++
+    Program(const Program&);
+    Program& operator= (const Program&);
 };
 
 

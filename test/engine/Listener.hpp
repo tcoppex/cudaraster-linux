@@ -1,4 +1,3 @@
-
 #ifndef ENGINE_LISTENER_HPP_
 #define ENGINE_LISTENER_HPP_
 
