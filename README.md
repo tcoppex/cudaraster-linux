@@ -12,7 +12,7 @@ passthrough shader.
 
 
 Despite the works remaining (mainly to improve documentation) there is no main 
-update plans in the distant future.
+updates planned in the distant future.
 
 
 Note: the original code is under the Apache license.
@@ -22,9 +22,11 @@ Structure
 ---------------------------------
 
 * src/
-  cudaraster, with part of the original framework.
+
+Cudaraster, with part of the original framework.
 
 * test/
+
 Sample application displaying a simple cube with depth-buffer enabled.
 OpenGL GLSL & CudaRaster 'PassThrough' shaders are provided.
 Pressing F1 switches between the OpenGL and the CudaRaster render mode,
@@ -35,6 +37,7 @@ they described a more complexe shaders using texture mapping and Phong lighting
 computation.
 
 * thirdparty/
+
 Libraries used by the sample application.
 
 
