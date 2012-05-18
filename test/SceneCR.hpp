@@ -59,7 +59,7 @@ class SceneCR
     void init(const Data& data);    
     void render( const Camera& camera );
     
-    bool toggleShowStats() { m_showStats = !m_showStats; }
+    void toggleShowStats() { m_showStats = !m_showStats; }
     
   
   private:

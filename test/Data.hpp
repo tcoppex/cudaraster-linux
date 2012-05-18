@@ -4,8 +4,10 @@
 #include <vector>
 
 ///================================
-/// Keep geometry data to share with
-/// SceneGL & SceneCR
+/// Basic geometry definition use
+/// to create OpenGL & CudaRaster
+/// specific buffer.
+/// see SceneCR, SceneGL
 ///================================
 struct Data
 {

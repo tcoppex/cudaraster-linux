@@ -2,11 +2,13 @@
 #define SCENEGL_HPP_
 
 #include <GL/glew.h>
+
 #include "engine/renderer/Program.hpp"
 #include "engine/renderer/VertexBuffer.hpp"
 
 class Camera;
 class Data;
+
 
 /// =========================================
 /// Scene datas for OpenGL rendering

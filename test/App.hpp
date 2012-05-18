@@ -1,12 +1,11 @@
 #ifndef APP_HPP
 #define APP_HPP
 
-// Application layout
 #include "engine/Application.hpp"
 
+#include "engine/Camera.hpp"
 #include "SceneCR.hpp"
 #include "SceneGL.hpp"
-#include "engine/Camera.hpp"
 
 
 /// =========================================
@@ -16,7 +15,7 @@
 class App : public Application
 {    
   private:
-    // ++ Defines the rendering mode ++
+    /// Defines the rendering mode
     enum Mode
     {
       MODE_CUDARASTER = 0,
@@ -27,15 +26,15 @@ class App : public Application
     
   
   public:
-    // ++ Default window's resolution ++
-    // (must be a multiple of CR_TILE_SIZE)
+    /// Default window's resolution
+    /// (must be a multiple of CR_TILE_SIZE)
     static const int kScreenWidth  = 720;
     static const int kScreenHeight = 480;  
     
-    // ++ Default shaders' path ++
+    /// Default shaders' path
     static const char* kShadersPath;
     
-    // ++ Holds rendering states ++
+    /// Holds rendering states
     static struct RenderState
     {
       bool bTexturing;
@@ -57,13 +56,17 @@ class App : public Application
   
   
   private:
+    /// Rendering mode
     Mode m_mode;
     
-    SceneCR m_sceneCR;
-    SceneGL m_sceneGL;
-        
+    /// Free-view camera
     Camera m_camera;
     
+    /// CudaRaster scene handler
+    SceneCR m_sceneCR;
+    
+    /// OpenGL scene handler
+    SceneGL m_sceneGL;
     
   public:
     App() 
@@ -85,10 +88,10 @@ class App : public Application
     
     
   private:
-    // ++ Redefines the context (window + event) creation ++
+    /// Redefines the context (window + event) creation
     virtual void _initContext(int argc, char *argv[]);
 
-    // ++ Redefines the generic datas initialization ++
+    /// Redefines the generic datas initialization
     virtual void _initObject( int argc, char *argv[]);
 };
 
